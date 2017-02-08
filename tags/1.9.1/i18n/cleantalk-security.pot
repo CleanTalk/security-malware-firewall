@@ -1,0 +1,207 @@
+# Copyright (C) 2012 CleanTalk
+# This file is distributed under the same license as the Cleantalk. Security package.
+msgid ""
+msgstr ""
+"Project-Id-Version: Security plugin by CleanTalk\n"
+"Report-Msgid-Bugs-To: http://wordpress.org/tag/cleantalk\n"
+"POT-Creation-Date: 2016-12-13 14:42+0500\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"PO-Revision-Date: 2016-12-13 14:41+0500\n"
+"Last-Translator: Roman Safronov <safronov@cleantalk.org>\n"
+"Language-Team: CleanTalk Team <welcome@cleantalk.org>\n"
+
+#: inc/spbc-admin.php:112
+#, php-format
+msgid ""
+"API key is not valid. Enter into %splugin settings%s in the main site "
+"dashboard to get API key."
+msgstr ""
+
+#: inc/spbc-admin.php:114
+#, php-format
+msgid "API key is not valid. Enter into %splugin settings%s to get API key."
+msgstr ""
+
+#: inc/spbc-admin.php:117
+#, php-format
+msgid "Why do you need an API key? Please, learn more %shere%s."
+msgstr ""
+
+#: inc/spbc-admin.php:119 inc/spbc-admin.php:219
+msgid "Dismiss this notice."
+msgstr ""
+
+#: inc/spbc-admin.php:131 inc/spbc-admin.php:133 inc/spbc-admin.php:144
+msgid "Settings"
+msgstr ""
+
+#: inc/spbc-admin.php:174
+#, php-format
+msgid "Please, enter the %splugin settings%s in main site dashboard."
+msgstr ""
+
+#: inc/spbc-admin.php:205
+msgid "API key is not valid. Use the buttons below to get API key."
+msgstr ""
+
+#: inc/spbc-admin.php:226
+msgid "Click here to get security statistics"
+msgstr ""
+
+#: inc/spbc-admin.php:234
+msgid "Show access key"
+msgstr ""
+
+#: inc/spbc-admin.php:262 inc/spbc-admin.php:264
+msgid "settings"
+msgstr ""
+
+#: inc/spbc-admin.php:273
+msgid "Security status"
+msgstr ""
+
+#: inc/spbc-admin.php:274
+msgid "Brute-force attacks log"
+msgstr ""
+
+#: inc/spbc-admin.php:278
+msgid "Allow users to use other key"
+msgstr ""
+
+#: inc/spbc-admin.php:283
+msgid "Access key"
+msgstr ""
+
+#: inc/spbc-admin.php:332
+msgid "Brute Force Protection"
+msgstr ""
+
+#: inc/spbc-admin.php:333
+msgid "Security Report"
+msgstr ""
+
+#: inc/spbc-admin.php:334
+msgid "Security Audit Log"
+msgstr ""
+
+#: inc/spbc-admin.php:386 inc/spbc-admin.php:388
+msgid "Enter the key"
+msgstr ""
+
+#: inc/spbc-admin.php:391
+msgid "Get access key manually"
+msgstr ""
+
+#: inc/spbc-admin.php:393
+msgid "or"
+msgstr ""
+
+#: inc/spbc-admin.php:394
+msgid "Get access key automatically"
+msgstr ""
+
+#: inc/spbc-admin.php:396
+#, php-format
+msgid "Admin e-mail (%s) will be used for registration"
+msgstr ""
+
+#: inc/spbc-admin.php:397
+msgid "License agreement"
+msgstr ""
+
+#: inc/spbc-admin.php:402
+msgid "<h3>Key is provided by Super Admin.<h3>"
+msgstr ""
+
+#: inc/spbc-admin.php:407
+msgid ""
+"Allow users to use different Access key in their plugin settings. They could "
+"use different CleanTalk account."
+msgstr ""
+
+#: inc/spbc-admin.php:412
+msgid ""
+"Allow users to u access to CleanTalk control panel from their Wordpress "
+"dashboard (only \"read\" access)."
+msgstr ""
+
+#: inc/spbc-admin.php:441
+#, php-format
+msgid "Error while checking the API key \"%s\" Error #%d Comment: %s."
+msgstr ""
+
+#: inc/spbc-admin.php:453
+#, php-format
+msgid "Key is not valid. Key: %s."
+msgstr ""
+
+#: inc/spbc-admin.php:458
+msgid ""
+"Cleantalk spbc_sendRawRequest() returns \"false\" while checking access key. "
+"Possible reasons: Bad connection or cloud server error(less possible)."
+msgstr ""
+
+#: inc/spbc-admin.php:490
+#, php-format
+msgid ""
+"The log includes list of attacks for past 24 hours and shows only last %d "
+"records. To see the full report please check the Daily security report in "
+"your Inbox (%s)."
+msgstr ""
+
+#: inc/spbc-tools.php:128
+#, php-format
+msgid "Error while sending logs: Error #%d Comment: %s. Api Key is \"%s\"."
+msgstr ""
+
+#: inc/spbc-tools.php:142
+#, php-format
+msgid "Logs sending error: Sent: %d. Confirmed receiving of %d rows."
+msgstr ""
+
+#: inc/spbc-tools.php:146
+msgid ""
+"Cleantalk spbc_sendRawRequest == false. Possible reasons: Bad connection or "
+"cloud server error(less possible)."
+msgstr ""
+
+#: inc/spbc-tools.php:240 inc/spbc-tools.php:265
+msgid "0 brute force attacks have been made for past day."
+msgstr ""
+
+#: inc/spbc-tools.php:291
+msgid "0 users have been logged in for past day."
+msgstr ""
+
+#: inc/spbc-tools.php:316
+msgid "Daily security report"
+msgstr ""
+
+#: inc/spbc-tools.php:322
+#, php-format
+msgid "%s brute force attacks or failed logins, %d successful logins."
+msgstr ""
+
+#. Plugin Name of the plugin/theme
+msgid "Security plugin by CleanTalk"
+msgstr ""
+
+#. Plugin URI of the plugin/theme
+msgid "https://wordpress.org/plugins/security-malware-firewall/"
+msgstr ""
+
+#. Description of the plugin/theme
+msgid ""
+"The plugin temporary restricts attempts to login to WordPress backend. The "
+"restriction is rising for a few seconds if an account failed to login."
+msgstr ""
+
+#. Author of the plugin/theme
+msgid "CleanTalk.org"
+msgstr ""
+
+#. Author URI of the plugin/theme
+msgid "https://cleantalk.org"
+msgstr ""
