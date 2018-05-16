@@ -2,7 +2,7 @@
 
 /* 
  * Patch for apache_request_headers() 
- * If Apache web server is missing then making
+ * If Apache web server is missing then making patch
  */
 if( !function_exists('apache_request_headers') ){
 	function apache_request_headers(){

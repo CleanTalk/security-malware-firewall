@@ -26,7 +26,7 @@ function spbc_admin_init() {
 	
 	// Drop debug data
 	if(!empty($_POST['spbc_drop_debug'])){
-		delete_option(SPBC_DEBUG);
+		$spbc->deleteOption('debug', 'use_prefix');
 	}
 	
 	//Get auto key button
@@ -89,8 +89,22 @@ function spbc_admin_init() {
 	add_action('wp_ajax_spbc_scanner_file_compare', 'spbc_scanner_file_compare');
 	add_action('wp_ajax_spbc_scanner_file_replace', 'spbc_scanner_file_replace');
 	
-	// SpbcList based on WP_List_Table
-	require_once(SPBC_PLUGIN_DIR . 'lib/SpbcFireWall.php');
+	// Settings
+	add_action('wp_ajax_spbc_tab__summary', 'spbc_tab__summary');
+	add_action('wp_ajax_spbc_tab__settings_general', 'spbc_tab__settings_general');
+	add_action('wp_ajax_spbc_tab__security_log', 'spbc_tab__security_log');
+	add_action('wp_ajax_spbc_tab__traffic_control', 'spbc_tab__traffic_control');
+	add_action('wp_ajax_spbc_tab__scanner', 'spbc_tab__scanner');
+	add_action('wp_ajax_spbc_tab__debug', 'spbc_tab__debug');
+	
+	// SPBC Table
+	add_action('wp_ajax_spbc_tbl-action--row', array('SpbcListTable', 'ajax__row_action_handler'));
+	add_action('wp_ajax_spbc_tbl-pagination',  array('SpbcListTable', 'ajax__pagination_handler'));
+	add_action('wp_ajax_spbc_tbl-sort',        array('SpbcListTable', 'ajax__sort_handler'));
+	
+	// Send logs_mscan
+	add_action('wp_ajax_spbc_send_traffic_control', 'spbc_send_firewall_logs', 1, 0);
+	add_action('wp_ajax_spbc_send_security_log', 'spbc_send_logs', 1, 0);
 	
 }
 
@@ -184,6 +198,11 @@ function spbc_plugin_action_links($links, $file) {
 		: '<a href="options-general.php?page=spbc">' . __( 'Settings' ) . '</a>';
 		
 	array_unshift( $links, $settings_link ); // before other links
+	
+	$trial = spbc_badge__get_premium(false);
+	if(!empty($trial))
+		array_unshift($links, spbc_badge__get_premium(false));
+	
 	return $links;
 }
 
@@ -243,17 +262,16 @@ function spbc_enqueue_scripts($hook) {
 		$actions_modified = $button_template_approve.$button_template_replace.$button_template_compare.$button_template_view_bad;
 		
 		// CSS
-		wp_enqueue_style ('spbc-settings',     SPBC_PATH . '/css/spbc-settings.css', array(),                             SPBC_VERSION, 'all');
-		wp_enqueue_style ('jquery-ui',         SPBC_PATH . '/css/jquery-ui.min.css', array(),                             '1.12.1',     'all');
+		wp_enqueue_style ('spbc-icons',        SPBC_PATH . '/css/spbc-icons.css',    array(),          SPBC_VERSION, 'all');
+		wp_enqueue_style ('spbc-settings',     SPBC_PATH . '/css/spbc-settings.css', array(),          SPBC_VERSION, 'all');
+		wp_enqueue_style ('spbc-table',        SPBC_PATH . '/css/spbc-table.css',    array(),          SPBC_VERSION, 'all');
+		wp_enqueue_style ('jquery-ui',         SPBC_PATH . '/css/jquery-ui.min.css', array(),          '1.12.1',     'all');
 		
 		// JS
-		wp_enqueue_script('jquery-ui',                SPBC_PATH . '/js/jquery-ui.min.js',         array('jquery'),                     '1.12.1',     false);
-		wp_enqueue_script('spbc-settings-js',         SPBC_PATH . '/js/spbc-settings.js',         array('jquery'),                     SPBC_VERSION, false);
-		// JS Scanner
-		wp_enqueue_script('spbc-scannerplugin-js',    SPBC_PATH . '/js/spbc-scanner-plugin.js',   array('jquery'),                     SPBC_VERSION, false);
-		wp_enqueue_script('spbc-scaner-js',           SPBC_PATH . '/js/spbc-scaner.js',           array('jquery', 'spbc-settings-js'), SPBC_VERSION, false);
-		wp_enqueue_script('spbc-scaner-callbacks-js', SPBC_PATH . '/js/spbc-scaner-callbacks.js', array('jquery', 'spbc-settings-js'), SPBC_VERSION, false);
-		wp_enqueue_script('spbc-scaner-events-js',    SPBC_PATH . '/js/spbc-scaner-events.js',    array('jquery', 'spbc-settings-js'), SPBC_VERSION, false);
+		wp_enqueue_script('jquery-ui',         SPBC_PATH . '/js/jquery-ui.min.js',   array('jquery'),  '1.12.1',     false);
+		wp_enqueue_script('spbc-common-js',    SPBC_PATH . '/js/spbc-common.js',     array('jquery'),  SPBC_VERSION, false);
+		wp_enqueue_script('spbc-settings-js',  SPBC_PATH . '/js/spbc-settings.js',   array('jquery'),  SPBC_VERSION, false);
+		wp_enqueue_script('spbc-table-js',     SPBC_PATH . '/js/spbc-table.js',      array('jquery'),  SPBC_VERSION, false);
 		
 		wp_localize_script('jquery', 'spbcSettings', array(
 			'tc_enabled' => $spbc->tc_enabled ? 1 : 0,
@@ -340,6 +358,30 @@ function spbc_enqueue_scripts($hook) {
 	}
 }
 
+
+function spbc_admin_add_script_attribute($tag, $handle, $src) {
+	
+	$async_scripts = array(
+		//'jquery-ui',
+		//'spbc-common-js',
+		'spbc-scannerplugin-js',
+		'spbc-scaner-events-js',
+		'spbc-scaner-callbacks-js',
+	);
+	
+	$defer_scripts = array(
+		'spbc-settings-js',
+		'spbc-scaner-js',
+	);
+	
+    if(in_array($handle, $async_scripts))
+		return str_replace( ' src', ' async="async" src', $tag );
+	elseif(in_array($handle, $defer_scripts))
+		return str_replace( ' src', ' defer="defer" src', $tag );
+	else
+		return $tag;
+}
+
 /*
  * Logging admin action
 */
@@ -391,4 +433,25 @@ function spbc_write_timer($timer){
     );
 	
 	return;
+}
+
+function spbc_badge__get_premium($print = true, $out = ''){
+	
+	global $spbc;
+	
+	if($spbc->data['license_trial'] == 1 && !empty($spbc->user_token)){
+		$out = '<b style="display: inline-block; margin-top: 10px;">'
+			.($print ? __('Make it right!', 'cleantalk').' ' : '')
+			.sprintf(
+				__('%sGet premium%s', 'cleantalk'),
+				'<a href="https://cleantalk.org/my/bill/security?user_token='.$spbc->user_token.'" target="_blank">',
+				'</a>'
+			)
+		.'</b>';
+	}
+	
+	if($print)
+		echo $out;
+	else
+		return $out;
 }

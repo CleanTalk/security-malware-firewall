@@ -208,7 +208,7 @@
 							if(result.files_total > 30){
 								if(!confirm(spbcScaner.scan_modified_confiramation)){
 									alert(spbcScaner.warning_about_cancel);
-									scanner.listResults();
+									scanner.sendResults();
 									return;
 								}
 							}
@@ -217,7 +217,7 @@
 						case 'scan_modified':
 							if( +spbcScaner.check_links )    {                                scanner.countLinks();                     return; } // Scan links
 							if( +spbcScaner.check_heuristic ){ opt.button.data('plug', true); scanner.count(spbcScaner.wp_content_dir); return; } // Scan plugins
-							scanner.listResults(); 
+							scanner.sendResults(); 
 							break;
 						
 						// Links
@@ -226,7 +226,7 @@
 							break;
 						case 'scan_links':
 							if( +spbcScaner.check_heuristic ){ opt.button.data('plug', true); scanner.count(spbcScaner.wp_content_dir); return; } // Scan plugins
-							scanner.listResults(); 
+							scanner.sendResults(); 
 							break;
 						
 						// Plugins and themes
@@ -240,18 +240,19 @@
 							scanner.scanModified(spbcScaner.wp_content_dir, 'UNKNOWN');
 							break;
 						case 'scan_modified_plug':
-							scanner.listResults();
+							scanner.sendResults();
 							break;
 						
 						// List results
-						case 'list_results':
-							scanner.sendResults();
-							break;
+						// case 'list_results':
+							// scanner.sendResults();
+							// break;
 						
 						// Send results
 						case 'send_results':
 							scanner.end();
 							opt.button.data('status', null);
+							location.href=location.origin+location.pathname+location.search+"&spbc_tab=scanner";
 							break;
 						
 						default:
@@ -336,7 +337,7 @@
 					.data('timeout',  60000);
 				data = {
 					action : 'spbc_scanner_scan_modified',
-					amount : 10,
+					amount : 5,
 					status : status,
 					path: path,
 				};
