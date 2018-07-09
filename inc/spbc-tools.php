@@ -124,6 +124,7 @@ function spbc_access_key_notices($spbc_key = null){
 				$spbc->data['service_id']         = $result['service_id'];
 				$spbc->data['moderate']	          = $result['moderate'];
 				$spbc->data['auto_update_app ']   = isset($result['auto_update_app']) ? $result['auto_update_app'] : 0;
+				$spbc->data['license_trial']      = isset($result['license_trial']) ? $result['license_trial'] : 0;
 				$spbc->save('data');
 				
 				if($spbc->data['notice_renew'] == 1)
