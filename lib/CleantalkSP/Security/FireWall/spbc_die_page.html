@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>{TITLE}</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+	<!--[if lt IE 9]>
+		<script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+	<![endif]-->
+<style>
+    html{font-size: 14pt;}
+    h1{text-align:center; border: 0;}
+    h1.main{margin-top: 1em;}
+	h2.second{margin-top: 1em; font-size: 18px; color: #666;}
+    div.container {text-align:center;}
+    div.container p.js_notice{width: 60%; display: inline-block;}
+    div.footer {color: #666; position: absolute; bottom: 1em; text-align: center;}
+    div.footer a {color: #666; vertical-align:bottom; text-align: center;}
+    div#js_passed {display:none;}
+
+    @media (max-width: 600px) {
+    }
+</style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="main">Security FireWall is activated for your IP&nbsp;<a href="https://cleantalk.org/blacklists/{REMOTE_ADDRESS}" target="_blank">{REMOTE_ADDRESS}</a></h1>
+		<h2>{TEST_TITLE}</h2>
+		<h2 class="second">{REASON}</h2>
+		<h2 class="second false_positive_warning" style="display: none;">{FALSE_POSITIVE_WARNING}</h2>
+		{GENERATED}
+    </div>
+	<div style='position: relative; line-height: 8px; text-align: center;'>
+		<p style="margin: 0; display: inline-block; font-size: 10px; color: gray;">{SERVICE_ID}, </p>
+		<p style="margin: 0; display: inline-block; font-size: 10px; color: gray;">{HOST}</p>
+	</div>
+    <div class="footer">
+		<a href="https://cleantalk.org" target="_blank">Security by CleanTalk</a>
+    </div>
+	<script>
+		var generated = {GENERATED_TIMESTAMP},
+			date = new Date();
+		if(Math.abs(generated%3600 - date.getSeconds()%3600) < 3){
+			document.getElementsByClassName('false_positive_warning')[0].style.display = 'inline';
+		}
+	</script>
+</body>
+</html>
