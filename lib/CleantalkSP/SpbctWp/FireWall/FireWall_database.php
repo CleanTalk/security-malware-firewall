@@ -33,9 +33,11 @@ class FireWall_database implements \CleantalkSP\Security\FireWall\FireWall_datab
 	}
 
 	public function fw_insert_data( $query ) {
-
-		if ( $this->db->query( $query ) ) {
-			return true;
+		
+		$result = $this->db->query( $query );
+		
+		if ( $result ) {
+			return $result;
 		} else {
 			$this->error = $this->db->last_error;
 			return false;
