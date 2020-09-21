@@ -83,28 +83,28 @@ class ClassWAF_WP extends FireWall_module_fw {
 		// XSS
 		if( $this->waf_xss_check ){
 			if($this->waf_xss_check($_POST) || $this->waf_xss_check($_GET) || $this->waf_xss_check($_COOKIE)){
-				$results[] = array('ip' => end($this->ip_array), 'is_personal' => false, 'status' => 'DENY_BY_WAF_XSS', $this->waf_pattern);
+				$results[] = array('ip' => end($this->ip_array), 'is_personal' => false, 'status' => 'DENY_BY_WAF_XSS', 'pattern' => $this->waf_pattern);
 			}
 		}
 
 		// SQL-injection
 		if( $this->waf_sql_check ){
 			if($this->waf_sql_check($_POST) || $this->waf_sql_check($_GET)){
-				$results[] = array('ip' => end($this->ip_array), 'is_personal' => false, 'status' => 'DENY_BY_WAF_SQL', $this->waf_pattern);
+				$results[] = array('ip' => end($this->ip_array), 'is_personal' => false, 'status' => 'DENY_BY_WAF_SQL', 'pattern' => $this->waf_pattern);
 			}
 		}
 
 		// File
 		if ($this->waf_file_check ){
 			if($this->waf_file_check()){
-				$results[] = array('ip' => end($this->ip_array), 'is_personal' => false, 'status' => 'DENY_BY_WAF_FILE', $this->waf_pattern);
+				$results[] = array('ip' => end($this->ip_array), 'is_personal' => false, 'status' => 'DENY_BY_WAF_FILE', 'pattern' => $this->waf_pattern);
 			}
 		}
 
 		// Exploits
 		if( $this->waf_exploit_check ){
 			if($this->waf_exploit_check()){
-				$results[] = array('ip' => end($this->ip_array), 'is_personal' => false, 'status' => 'DENY_BY_WAF_EXPLOIT', $this->waf_pattern);
+				$results[] = array('ip' => end($this->ip_array), 'is_personal' => false, 'status' => 'DENY_BY_WAF_EXPLOIT', 'pattern' => $this->waf_pattern);
 			}
 		}
 
