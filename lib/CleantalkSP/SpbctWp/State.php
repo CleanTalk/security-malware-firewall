@@ -16,7 +16,8 @@ namespace CleantalkSP\SpbctWp;
  */
 
 class State
-{	
+{
+	public $doing_cron = false;
 	public $option_prefix = '';
 	public $settings__elements     = array();
 	public $settings__tabs_heading = array();
@@ -67,16 +68,21 @@ class State
 		'complete_deactivation'            => 0,
 	);
 	public $def_data = array(
+		
+		// Firewall
+		'firewall_updating_id'         => null,
+		'firewall_updating_last_start' => 0,
+		'firewall_entries'             => null,
+		'last_firewall_send'           => null,
+		'last_firewall_send_count'     => null,
+		'last_firewall_updated'        => null,
+		
 		'plugin_version'           => SPBC_VERSION,
 		'user_token'               => '',
 		'key_is_ok'                => false,
 		'moderate'                 => false,
 		'logs_last_sent'           => null,
 		'last_sent_events_count'   => null,
-		'last_firewall_updated'    => null,
-		'firewall_entries'         => null,
-		'last_firewall_send'       => null,
-		'last_firewall_send_count' => null,
 		'notice_show'              => null,
 		'notice_renew'             => false,
 		'notice_trial'             => false,
@@ -125,13 +131,16 @@ class State
 	public $def_remote_calls = array(
 		
 	// Common
-		'close_renew_banner'       => array('last_call' => 0,),
-		'update_plugin'            => array('last_call' => 0,),
-		'update_security_firewall' => array('last_call' => 0, 'cooldown' => 600),
-		'update_security_firewall__write_base' => array('last_call' => 0),
-		'drop_security_firewall'   => array('last_call' => 0,),
-		'update_settings'          => array('last_call' => 0,),
-		
+		'check_website'          => array( 'last_call' => 0, 'cooldown' => 0 ),
+		'close_renew_banner'     => array( 'last_call' => 0, ),
+		'update_plugin'          => array( 'last_call' => 0, ),
+		'drop_security_firewall' => array( 'last_call' => 0, ),
+		'update_settings'        => array( 'last_call' => 0, ),
+	
+	// Firewall
+		'update_security_firewall'             => array( 'last_call' => 0, 'cooldown' => 300 ),
+		'update_security_firewall__write_base' => array( 'last_call' => 0, 'cooldown' => 0 ),
+	
 	// Inner
 		'download__quarantine_file' => array('last_call' => 0, 'cooldown' => 3),
 		
@@ -287,6 +296,23 @@ class State
 	}
 	
 	/**
+	 * Set or deletes an error depends of the first bool parameter
+	 *
+	 * @param $add_error
+	 * @param $error
+	 * @param $type
+	 * @param null $major_type
+	 * @param bool $set_time
+	 * @param bool $save_flag
+	 */
+	public function error_toggle($add_error, $type, $error, $major_type = null, $set_time = true, $save_flag = true ){
+		if( $add_error )
+			$this->error_add( $type, $error, $major_type, $set_time );
+		else
+			$this->error_delete( $type, $save_flag, $major_type );
+	}
+	
+	/**
 	 * Deletes an error from the plugin's data
 	 *
 	 * @param string $type
@@ -327,13 +353,6 @@ class State
 		$this->errors = new \ArrayObject($this->def_errors);
 		if($save_flag)
 			$this->save('errors');
-	}
-	
-	public function error_toggle($add_flag = true, $type, $save_flag = false, $major_type = null){
-		if($add_flag)
-			$this->error_add($type, $save_flag, $major_type);
-		else
-			$this->error_delete($type, $save_flag, $major_type);
 	}
 	
 	public function __set($name, $value) 

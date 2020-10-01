@@ -333,7 +333,7 @@ class SpbcScannerH
 						$this->file_lexems[ $key - 2 ],
 						$this->file_lexems[ $key - 3 ]
 					);
-					$char_num = trim( $prev[1], '\'"');
+					$char_num = (int) trim( $prev[1], '\'"');
 					$this->file_lexems[ $key ] = array(
 						'T_CONSTANT_ENCAPSED_STRING',
 						'\'' . ( chr( $char_num ) ? chr( $char_num ) : '') . '\'',

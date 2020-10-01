@@ -29,10 +29,8 @@ class RemoteCalls
 			$cooldown = isset($spbc->remote_calls[$action]['cooldown']) ? $spbc->remote_calls[$action]['cooldown'] : self::COOLDOWN;
 //			$pass_cooldown = SpbcHelper::ip__get(array('real')) === filter_input(INPUT_SERVER, 'SERVER_ADDR');
 //			$pass_cooldown = false; // Temp crutch
-
-			if(time() - $spbc->remote_calls[$action]['last_call'] > $cooldown
-				|| ($action == 'update_security_firewall__write_base' && isset($_GET['file_urls']))
-			){
+			
+			if( time() - $spbc->remote_calls[ $action ]['last_call'] >= $cooldown ){
 				
 				$spbc->remote_calls[$action]['last_call'] = time();
 				$spbc->save('remote_calls');
@@ -46,7 +44,13 @@ class RemoteCalls
 						
 						if(get_option('spbc_deactivation_in_process') === false){ // Continue if plugin is active
 							
-							if(!empty($_GET['delay'])) sleep(Get::get('delay')); // Delay before perform action;
+							// Delay before perform action;
+							if ( Get::get( 'delay' ) )
+								sleep( Get::get( 'delay' ) );
+							
+							if ( Get::get( 'test' ) )
+								die('OK');
+							
 							$out = RemoteCalls::$action();
 						
 							// Stop execution if plguin is deactivated
@@ -64,6 +68,10 @@ class RemoteCalls
 			$out = 'FAIL '.json_encode(array('error' => 'UNKNOWN_ACTION'));
 		
 		die($out);
+	}
+	
+	static function action__check_website(){
+		die('OK');
 	}
 	
 	/**
@@ -84,11 +92,15 @@ class RemoteCalls
 	
 	static function action__update_security_firewall() {
 		$result = spbc_security_firewall_update(true);
+		global $spbc;
+		$spbc->error_toggle( ! empty( $result['error'] ), 'firewall_update', $result);
 		die(empty($result['error']) ? 'OK' : 'FAIL '.json_encode(array('error' => $result['error'])));
 	}
     static function action__update_security_firewall__write_base() {
         $result = spbc_security_firewall_update(true);
-        die(empty($result['error']) ? 'OK' : 'FAIL '.json_encode(array('error' => $result['error'])));
+	    global $spbc;
+	    $spbc->error_toggle( ! empty( $result['error'] ), 'firewall_update', $result);
+	    die(empty($result['error']) ? 'OK' : 'FAIL '.json_encode(array('error' => $result['error'])));
     }
 	static function action__drop_security_firewall() {
 		$result = spbc_security_firewall_drop();

@@ -187,9 +187,9 @@ function spbc_admin_notice_message(){
 		echo '<div class="error um-admin-notice notice" id="spbc_trial_notice" style="position: relative;">'
 				.'<h3>'
 					.'<u>'.$plugin_settings_link.'</u>: '
-					. __('trial period ends, please upgrade to premium version to keep your site secure and safe!', 'security-malware-firewall')
+					. __('Trial period is now over, please upgrade to premium version to keep your site secure and safe!', 'security-malware-firewall')
 				.'</h3>'
-				.'<h4 style = "color: gray;">Account status updates every minute.</h4>'
+				.'<h4 style = "color: gray;">' . esc_html__( 'Account status updates every minute.', 'security-malware-firewall' ) . '</h4>'
 				.'<p>'.$link.'</p>'
 			.'</div>';
 		return;
@@ -293,7 +293,7 @@ function spbc_plugin_links_meta($meta, $plugin_file){
 function spbc_enqueue_scripts($hook) {
 
 	// If the user is not admin
-	if( ! current_user_can( 'manage_options' ) ){
+	if( ! current_user_can( 'upload_files' ) ){
 		return;
 	}
 	

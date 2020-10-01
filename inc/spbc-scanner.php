@@ -335,7 +335,7 @@ function spbc_scanner_get_remote_hashes__plug($direct_call = false, $amount = 2)
 			require_once(ABSPATH.'wp-admin/includes/plugin-install.php');
 			$result = plugins_api(
 				'plugin_information',
-				array('slug' => $plugin_slug, 'fileds' => array('version' => true,),)
+				array('slug' => $plugin_slug, 'fields' => array('version' => true,),)
 			);
 			$source_status = !is_wp_error($result)
 				? (version_compare($plugin['Version'], $result->version, '>=') ? 'UP_TO_DATE' : 'OUTDATED')
@@ -392,7 +392,7 @@ function spbc_scanner_get_remote_hashes__plug($direct_call = false, $amount = 2)
 			require_once(ABSPATH.'wp-admin/includes/theme.php');
 			$result = themes_api(
 				'theme_information',
-				array('slug' => $theme_slug, 'fileds' => array('version' => true,),)
+				array('slug' => $theme_slug, 'fields' => array('version' => true,),)
 			);
 			$source_status = !is_wp_error($result)
 				? (version_compare($theme['Version'], $result->version, '>=') ? 'UP_TO_DATE' : 'OUTDATED')
@@ -460,9 +460,9 @@ function spbc_scanner_get_remote_hashes__approved($direct_call = false) {
 			$result_db = $wpdb->query('UPDATE '. SPBC_TBL_SCAN_FILES
 				.' SET 
 				checked  =   \'YES\',
-				status   =   \'APROVED\',
+				status   =   \'OK\',
 				severity =   NULL
-				WHERE path = \'' . $value[0] . '\' AND full_hash = \'' . $value[1] . '\';'
+				WHERE full_hash = \'' . $value[1] . '\';'
 			);
 		}
 	}
@@ -1490,7 +1490,7 @@ function spbc_scanner_file_delete($direct_call = false, $file_id = null){
 	$output['exec_time'] = $exec_time;
 	
 	if($direct_call)
-		return $output;
+		return spbc_humanize_output($output);
 	else
 		die(json_encode($output));
 }
@@ -1987,6 +1987,7 @@ function spbc_scanner_file_quarantine($direct_call = false, $file_id = null){
 						);
 						if($result !== false && $result > 0){
 							if(unlink($root_path.$file_info['path'])){
+								sleep(3); // Waiting for deleting
 								$response = SpbcHelper::http__request(get_option('siteurl'),array(),'dont_split_to_array');
 								if( SpbcHelper::http__request(get_option('site_url'), array(), 'get get_code') && !spbc_search_page_errors($response) ){
 									$output = array('success' => true,);
@@ -2010,7 +2011,7 @@ function spbc_scanner_file_quarantine($direct_call = false, $file_id = null){
 	}else
 		$output = array('error' =>'WRONG_FILE_ID');
 	
-	if($direct_call) return $output; else die(json_encode($output));
+	if($direct_call) return spbc_humanize_output($output); else die(json_encode($output));
 }
 
 function spbc_scanner_file_quarantine__restore($direct_call = false, $file_id = null){
@@ -2121,4 +2122,32 @@ function spbc_scanner_file_download($direct_call = false, $file_id = null){
 		$output = array('error' =>'WRONG_FILE_ID');
 	
 	if($direct_call) return $output; else die(json_encode($output));
+}
+
+/**
+ * Replacing error codes by readable and translatable format.
+ * We have to add new error descriptions here future.
+ *
+ * @param $output_array
+ *
+ * @return array
+ */
+function spbc_humanize_output( $output_array ) {
+
+	if( is_array( $output_array ) &&  array_key_exists( 'error', $output_array ) ) {
+		$errors_codes = array(
+			'WEBSITE_RESPONSE_BAD',
+			'REVERT_OK'
+		);
+		$errors_texts = array(
+			esc_html__( 'The website did not pass checking.', 'security-malware-firewall' ), // WEBSITE_RESPONSE_BAD
+			esc_html__( 'The process was reverted.', 'security-malware-firewall' ),          // REVERT_OK
+		);
+		foreach ( $output_array as $key => $item ) {
+			$output_array[$key] = str_replace( $errors_codes, $errors_texts, $item );
+		}
+	}
+
+	return $output_array;
+
 }
