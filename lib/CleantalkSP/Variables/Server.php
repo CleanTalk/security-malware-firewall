@@ -52,31 +52,29 @@ class Server extends SuperGlobalVariables{
 	/**
 	 * Checks if $_SERVER['REQUEST_URI'] contains string
 	 *
-	 * @param string $string needle
+	 * @param string $needle
 	 *
-	 * @return bool|int
+	 * @return bool
 	 */
-	public static function in_uri( $string ){
-		return self::has_string( 'REQUEST_URI', $string );
+	public static function in_uri( $needle ){
+		return self::has_string( 'REQUEST_URI', $needle );
 	}
 	
 	/**
 	 * Checks if $_SERVER['REQUEST_URI'] contains string
 	 *
-	 * @param string $string needle
+	 * @param string $needle needle
 	 *
-	 * @return bool|int
+	 * @return bool
 	 */
-	public static function in_referer( $string ){
-		return self::has_string( 'HTTP_REFERER', $string );
+	public static function in_referer( $needle ){
+		return self::has_string( 'HTTP_REFERER', $needle );
 	}
 	
 	/**
 	 * Checks if $_SERVER['REQUEST_URI'] contains string
 	 *
-	 * @param string $string needle
-	 *
-	 * @return bool|int
+	 * @return bool
 	 */
 	public static function is_post(){
 		return self::get( 'REQUEST_METHOD' ) === 'POST';
