@@ -60,6 +60,15 @@ class Server extends SuperGlobalVariables{
 		return self::has_string( 'REQUEST_URI', $needle );
 	}
 	
+	public static function in_host( $needle ){
+		return self::has_string( 'HTTP_HOST', $needle );
+	}
+	
+	public static function get_domain(){
+		preg_match( '@\.(\S+)\/?$@', self::get( 'HTTP_HOST' ), $matches );
+		return isset( $matches[1] ) ? $matches[1] : false;
+	}
+	
 	/**
 	 * Checks if $_SERVER['REQUEST_URI'] contains string
 	 *
