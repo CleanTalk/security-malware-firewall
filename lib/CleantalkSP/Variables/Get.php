@@ -16,11 +16,13 @@ class Get extends SuperGlobalVariables{
 	
 	/**
 	 * Gets given $_GET variable and save it to memory
-	 * @param $name
+	 *
+	 * @param string $name
+	 * @param bool $do_decode
 	 *
 	 * @return mixed|string
 	 */
-	protected function get_variable( $name ){
+	protected function get_variable( $name, $do_decode = true ){
 		
 		// Return from memory. From $this->variables
 		if(isset(static::$instance->variables[$name]))
@@ -31,6 +33,8 @@ class Get extends SuperGlobalVariables{
 		
 		if( empty( $value ) )
 			$value = isset( $_GET[ $name ] ) ? $_GET[ $name ]	: '';
+		
+		$value = $do_decode ? urldecode( $value ) : $value;
 		
 		// Remember for thurther calls
 		static::getInstance()->remember_variable( $name, $value );
