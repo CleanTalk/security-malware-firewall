@@ -74,7 +74,7 @@ class CodeStyle
     
     public function analiseLineLengths(&$content)
     {
-        $lines = explode(PHP_EOL, $content);
+        $lines = explode("\r", $content);
         
         for( $line_num = 1; isset($lines[$line_num - 1]); $line_num++ ){
             
@@ -92,29 +92,29 @@ class CodeStyle
     
     public function searchIncompatibleOnelinedTokens()
     {
-        if( $this->tokens->isCurrentTokenInGroup('one_line') ){
-            $this->greedy_token_lines[] = $this->tokens->current[2];
+        if( $this->tokens->current->isTypeOf( 'one_line') ){
+            $this->greedy_token_lines[] = $this->tokens->current->line;
         }
     }
     
     public function sortTokensWithDifferentTypes(){
         
-        $current_token_length = strlen($this->tokens->current[1]);
-        $current_token_line   = $this->tokens->current[2];
+        $current_token_length = $this->tokens->current->length;
+        $current_token_line   = $this->tokens->current->line;
         
-        if( $this->tokens->isCurrentTokenInGroup('html') ){
-            $this->tokens->html[] = $this->tokens->current;
-            $this->length_of_tokens__html += $current_token_length;
-            $this->number_of_lines__html[] = $current_token_line;
+        if( $this->tokens->current->isTypeOf('html') ){
+            $this->tokens->html[]          =  $this->tokens->current;
+            $this->length_of_tokens__html  += $current_token_length;
+            $this->number_of_lines__html[] =  $current_token_line;
             
-        }elseif( $this->tokens->isCurrentTokenInGroup('comments') ){
-            $this->tokens->comments[] = $this->tokens->current;
-            $this->length_of_tokens__comments += $current_token_length;
-            $this->number_of_lines__comments[] = $current_token_line;
+        }elseif( $this->tokens->current->isTypeOf('comments') ){
+            $this->tokens->comments[]          =  $this->tokens->current;
+            $this->length_of_tokens__comments  += $current_token_length;
+            $this->number_of_lines__comments[] =  $current_token_line;
             
         }else{
-            $this->length_of_tokens__code += $current_token_length;
-            $this->number_of_lines__code[] = $current_token_line;
+            $this->length_of_tokens__code  += $current_token_length;
+            $this->number_of_lines__code[] =  $current_token_line;
         }
     }
     
@@ -122,8 +122,6 @@ class CodeStyle
     {
         $line_nums = array_intersect($this->greedy_token_lines, array_unique($this->greedy_token_lines));
         $values    = array_fill(0, count($line_nums), 'BAD_LINE__INTERSECTED_TOKENS');
-    
-        array_combine($line_nums, $values);
         
         return array_combine($line_nums, $values);
     }
