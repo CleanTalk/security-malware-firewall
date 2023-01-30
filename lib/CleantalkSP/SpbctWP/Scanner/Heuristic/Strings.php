@@ -161,11 +161,11 @@ class Strings
                 : $this->tokens->next1->value;
 
             switch ($left_val . $right_val) {
-                case 'eval' :
+                case 'eval':
                     $token_type = 'T_EVAL';
                     break;
                 case 'assert':
-                case 'create_function' :
+                case 'create_function':
                     $token_type = 'T_STRING';
                     break;
                 default:
