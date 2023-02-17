@@ -120,9 +120,6 @@ class ExtendedSplFixedArray extends \SplFixedArray
             // Return only not empty values
             if ( isset($this[$index]) ) {
                 $out[] = $this[$index];
-                // If value is empty extend range
-            } else {
-                $index++;
             }
         }
 
