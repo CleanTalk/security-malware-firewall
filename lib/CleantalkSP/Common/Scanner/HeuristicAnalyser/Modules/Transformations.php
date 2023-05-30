@@ -30,6 +30,8 @@ class Transformations
      *  - gzuncompress
      *
      * @psalm-suppress PossiblyUnusedMethod
+     * @psalm-suppress UnusedVariable
+     * @psalm-suppress PossiblyUnusedReturnValue
      */
     public function decodeData($_key)
     {

@@ -2,6 +2,9 @@
 
 namespace CleantalkSP\Common\Scanner\HeuristicAnalyser\Structures;
 
+/**
+ * @psalm-suppress PossiblyUnusedProperty
+ */
 class Verdict
 {
     public $weak_spots;

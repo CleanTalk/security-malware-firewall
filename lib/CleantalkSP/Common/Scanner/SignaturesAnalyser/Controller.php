@@ -75,7 +75,6 @@ class Controller
 
         if ( file_exists($root_path . $file_info->path) ) {
             if ( is_readable($root_path . $file_info->path) ) {
-
                 self::checkFileSize($root_path . $file_info->path);
 
                 $verdict      = array();

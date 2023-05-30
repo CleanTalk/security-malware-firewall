@@ -31,6 +31,7 @@ class Controller
         // 1) Get content or path based heuristic object
         // 2) Run preparing process
         // 3) processContent
+        // 4)
 
         try {
             $output = $this->scanFileForHeuristic($file_info, $root_path);

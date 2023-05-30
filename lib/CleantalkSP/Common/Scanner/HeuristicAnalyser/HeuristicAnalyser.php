@@ -508,7 +508,7 @@ class HeuristicAnalyser
     {
         $output = '';
         foreach ( $this->tokens as $token ) {
-            if( !is_null($token) ) {
+            if ( !is_null($token) ) {
                 $output .= $token[1];
             }
         }

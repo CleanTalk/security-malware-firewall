@@ -21,6 +21,13 @@ class FileInfo
      */
     public $weak_spots;
 
+    /**
+     * @param $path
+     * @param $full_hash
+     * @param $weak_spots
+     *
+     * @psalm-suppress PossiblyUnusedMethod
+     */
     public function __construct($path, $full_hash, $weak_spots = '')
     {
         $this->path = $path;

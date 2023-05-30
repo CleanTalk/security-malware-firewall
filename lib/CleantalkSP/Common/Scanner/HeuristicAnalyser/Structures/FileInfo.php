@@ -11,6 +11,7 @@ class FileInfo
 
     /**
      * @var string
+     * @psalm-suppress PossiblyUnusedProperty
      */
     public $content;
     /**
@@ -18,6 +19,12 @@ class FileInfo
      */
     public $weak_spots;
 
+    /**
+     * @param $path
+     * @param $content
+     *
+     * @psalm-suppress PossiblyUnusedMethod
+     */
     public function __construct($path = '', $content = '')
     {
         $this->path = $path;
