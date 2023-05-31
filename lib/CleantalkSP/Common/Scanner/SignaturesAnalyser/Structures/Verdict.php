@@ -7,7 +7,7 @@ namespace CleantalkSP\Common\Scanner\SignaturesAnalyser\Structures;
  */
 class Verdict
 {
-    public $weak_spots;
-    public $severity;
-    public $status;
+    public $weak_spots = 'NULL';
+    public $severity   = 'NULL';
+    public $status     = 'UNKNOWN';
 }

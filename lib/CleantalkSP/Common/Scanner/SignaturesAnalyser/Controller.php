@@ -18,9 +18,8 @@ class Controller
      */
     private $model;
 
-    public function __construct(Model $model)
+    public function __construct()
     {
-        $this->model = $model;
     }
 
     public function scanFile(FileInfo $file_info, $root_path = null, &$signatures = null)
@@ -31,7 +30,8 @@ class Controller
         try {
             $output = $this->scanFileForSignatures($file_info, $root_path, $signatures);
         } catch (SignaturesScannerException $e) {
-            $output = array('error' => $e->getMessage());
+            //$output = array('error' => $e->getMessage());
+            $output = new Verdict();
         }
 
         return $output;
@@ -122,8 +122,8 @@ class Controller
                     $output->severity   = 'CRITICAL';
                     $output->status     = 'INFECTED';
                 } else {
-                    $output->weak_spots = null;
-                    $output->severity   = null;
+                    $output->weak_spots = 'NULL';
+                    $output->severity   = 'NULL';
                     $output->status     = 'OK';
                 }
             } else {
