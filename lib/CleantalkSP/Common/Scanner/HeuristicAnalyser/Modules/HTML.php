@@ -2,6 +2,9 @@
 
 namespace CleantalkSP\Common\Scanner\HeuristicAnalyser\Modules;
 
+/**
+ * @psalm-suppress UnusedClass
+ */
 class HTML
 {
     /**
