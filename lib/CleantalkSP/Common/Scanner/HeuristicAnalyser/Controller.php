@@ -16,23 +16,20 @@ class Controller
      * @var Model
      */
     private $model;
+
+    /**
+     * @var string
+     *
+     * @psalm-suppress PossiblyUnusedProperty
+     */
     public $final_code;
 
-    public function __construct(Model $model)
+    public function __construct()
     {
-        $this->model = $model;
     }
 
-    public function scanFile(FileInfo $file_info, $root_path = null)
+    public function scanFile(FileInfo $file_info, $root_path)
     {
-        $root_path  = $root_path ?: $this->getRootPath();
-
-
-        // 1) Get content or path based heuristic object
-        // 2) Run preparing process
-        // 3) processContent
-        // 4)
-
         try {
             $output = $this->scanFileForHeuristic($file_info, $root_path);
         } catch (HeuristicScannerException $e) {
@@ -50,10 +47,8 @@ class Controller
      *
      * @return Verdict False or Array of found bad constructs sorted by severity
      */
-    private function scanFileForHeuristic(FileInfo $file_info, $root_path = '')
+    private function scanFileForHeuristic(FileInfo $file_info, $root_path)
     {
-        $root_path = $root_path ?: $this->getRootPath();
-
         $scanner = new HeuristicAnalyser(array('path' => $root_path . $file_info->path));
 
         $output = new Verdict();
@@ -83,11 +78,11 @@ class Controller
         // Processing results
         if ( ! empty($verdict) ) {
             $output->weak_spots = $verdict;
-            $output->severity   = array_key_exists('CRITICAL', $verdict) ? 'CRITICAL' : (array_key_exists(
+            $output->severity   = array_key_exists('CRITICAL', $verdict) || array_key_exists('SIGNATURES', $verdict) ? 'CRITICAL' : (array_key_exists(
                 'DANGER',
                 $verdict
             ) ? 'DANGER' : 'SUSPICIOUS');
-            $output->status     = array_key_exists('CRITICAL', $verdict) ? 'INFECTED' : 'OK';
+            $output->status     = array_key_exists('CRITICAL', $verdict) || array_key_exists('SIGNATURES', $verdict) || array_key_exists('SUSPICIOUS', $verdict)  ? 'INFECTED' : 'OK';
         } else {
             $output->weak_spots = null;
             $output->severity   = null;
@@ -96,10 +91,5 @@ class Controller
 
         $this->final_code = $scanner->deobfuscated_code;
         return $output;
-    }
-
-    private function getRootPath()
-    {
-        return $this->model->getRootPath();
     }
 }

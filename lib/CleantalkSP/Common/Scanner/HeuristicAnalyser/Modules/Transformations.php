@@ -30,7 +30,6 @@ class Transformations
      *  - gzuncompress
      *
      * @psalm-suppress PossiblyUnusedMethod
-     * @psalm-suppress UnusedVariable
      * @psalm-suppress PossiblyUnusedReturnValue
      */
     public function decodeData($_key)
@@ -39,6 +38,7 @@ class Transformations
             $this->tokens->current->type === 'T_STRING' &&
             $this->tokens->next2->type === 'T_CONSTANT_ENCAPSED_STRING'
         ) {
+            //@psalm-suppress UnusedVariable
             switch ( $this->tokens->current->value ) {
                 case 'base64_decode':
                     $data = base64_decode((string)$this->tokens->next2->value);
@@ -82,6 +82,9 @@ class Transformations
             //
             //    return true;
             //}
+            if ( ! $data ) {
+                return false;
+            }
             //==
             //possible reasons
             /* @todo make new data merge wth tokens

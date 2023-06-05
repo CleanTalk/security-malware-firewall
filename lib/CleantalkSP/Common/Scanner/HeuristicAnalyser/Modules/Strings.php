@@ -181,6 +181,8 @@ class Strings
                 $this->tokens->current->key
             );
 
+            $this->tokens['current']->addTag('glued');
+
             $this->tokens->unsetTokens('prev1', 'next1');
 
             return true;

@@ -5,6 +5,7 @@ namespace CleantalkSP\Common\Scanner\HeuristicAnalyser;
 use CleantalkSP\Common\Scanner\HeuristicAnalyser\DataStructures\ExtendedSplFixedArray;
 use CleantalkSP\Common\Scanner\HeuristicAnalyser\Modules\CodeStyle;
 use CleantalkSP\Common\Scanner\HeuristicAnalyser\Modules\Evaluations;
+use CleantalkSP\Common\Scanner\HeuristicAnalyser\Modules\FunctionsDecryptorService;
 use CleantalkSP\Common\Scanner\HeuristicAnalyser\Modules\Includes;
 use CleantalkSP\Common\Scanner\HeuristicAnalyser\Modules\Simplifier;
 use CleantalkSP\Common\Scanner\HeuristicAnalyser\Modules\SQLs;
@@ -73,6 +74,11 @@ class HeuristicAnalyser
     );
 
     public $verdict = array(); // Scan results
+
+    /**
+     * @var bool
+     * @psalm-suppress UnusedProperty
+     */
     public $looks_safe = false;
 
     private $bad_constructs = array(
@@ -93,11 +99,18 @@ class HeuristicAnalyser
             '`',
         ),
         'SUSPICIOUS' => array(
-            //'base64_encode',
-            //'base64_decode',
             'str_rot13',
             'syslog',
         ),
+    );
+
+    /**
+     * Contains a set of dangerous values that have been decoded
+     * @var string[]
+     */
+    private $dangerous_decoded_values = array(
+        'base64_decode',
+        'base64_encode'
     );
 
     /** Modules */
@@ -312,11 +325,16 @@ class HeuristicAnalyser
                 $this->variables->updateConstants($key);
 
                 // Executing decoding functions
-                $this->transformations->decodeData($key);
+                // @ToDo there was many false positives!
+                // $this->transformations->decodeData($key);
             }
 
             $this->variables->concatenate(); // Concatenates variable content if it's possible
         } while ( $this->tokens->were_modified === true );
+
+        // Decryption of data inside functions base64_decode , str_rot13
+        $functions_descriptor = new FunctionsDecryptorService($this->tokens);
+        $functions_descriptor->handle();
 
         // Mark evaluation as safe if it matches conditions
         if ( $this->is_evaluation && $this->evaluations->isSafe() ) {
@@ -357,11 +375,6 @@ class HeuristicAnalyser
 
             /** Merge verdicts */
             $this->verdict = array_merge_recursive($this->verdict, $sub->verdict);
-
-            // Delete safe evaluations t reduce false positives
-            if ( $sub->looks_safe ) {
-                unset($this->verdict['CRITICAL'][$evaluation_string]);
-            }
         }
 
         $this->cleanUpVerdict();
@@ -376,16 +389,32 @@ class HeuristicAnalyser
                     ! (
                         $this->tokens->prev1->type === 'T_OBJECT_OPERATOR' ||
                         $this->tokens->prev2->type === 'T_FUNCTION'
-                    ) &&
-                    in_array($this->tokens->current->value, $set_of_functions, true)
+                    )
                 ) {
-                    $found_malware_key                                        = array_search(
-                        $this->tokens->current->value,
-                        $set_of_functions,
-                        true
-                    );
-                    $this->verdict[$severity][$this->tokens->current->line][] = $set_of_functions[$found_malware_key];
+                    // From common bad_constructs
+                    if (in_array(trim((string)$this->tokens->current->value, '\''), $set_of_functions, true)) {
+                        $found_malware_key                                        = array_search(
+                            $this->tokens->current->value,
+                            $set_of_functions,
+                            true
+                        );
+                        $this->verdict[$severity][$this->tokens->current->line][] = $set_of_functions[$found_malware_key];
+                    }
                 }
+            }
+
+            // From special decrypted constructs
+            if ($this->checkingSpecialDecryptedToken($this->tokens->current)) {
+                $found_malware_key                                        = array_search(
+                    $this->tokens->current->value,
+                    $this->dangerous_decoded_values,
+                    true
+                );
+                $this->verdict['CRITICAL'][$this->tokens->current->line][] = $this->dangerous_decoded_values[$found_malware_key];
+            } elseif ($this->checkingGluedToken($this->tokens->current)) {
+                $this->verdict['SUSPICIOUS'][$this->tokens->current->line][] = 'obfuscation tag script';
+            } elseif ($this->checkingDecryptedToken($this->tokens->current)) {
+                $this->verdict['CRITICAL'][$this->tokens->current->line][] = 'the function contains suspicious arguments';
             }
         }
 
@@ -502,6 +531,36 @@ class HeuristicAnalyser
     public function getVariablesBad()
     {
         return $this->variables->variables_bad;
+    }
+
+    private function checkingSpecialDecryptedToken(DataStructures\Token $token)
+    {
+        if (!$token->existsTag('glued')) {
+            return false;
+        }
+
+        return $token->type === 'T_CONSTANT_ENCAPSED_STRING' &&
+               is_callable(trim((string)$token->value, '\'')) &&
+               in_array(trim((string)$token->value, '\''), $this->dangerous_decoded_values, true);
+    }
+
+    private function checkingGluedToken(DataStructures\Token $token)
+    {
+        if (!$token->existsTag('glued')) {
+            return false;
+        }
+
+        return $token->type === 'T_CONSTANT_ENCAPSED_STRING' &&
+               stripos((string)$token->value, '<script');
+    }
+
+    private function checkingDecryptedToken(DataStructures\Token $token)
+    {
+        if ($token->existsTag('suspicious_args')) {
+            return true;
+        }
+
+        return false;
     }
 
     private function getResultCode()
