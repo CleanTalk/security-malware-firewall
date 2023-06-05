@@ -6,27 +6,18 @@ use CleantalkSP\Common\Helpers\Arr;
 use CleantalkSP\Common\Helpers\Helper;
 use CleantalkSP\Common\Scanner\SignaturesAnalyser\Structures\FileInfo;
 use CleantalkSP\Common\Scanner\SignaturesAnalyser\Structures\Verdict;
-use CleantalkSP\Common\Scanner\SignaturesAnalyser\Model\Model;
 use CleantalkSP\Common\Scanner\SignaturesAnalyser\Exceptions\SignaturesScannerException;
 
 class Controller
 {
     const FILE_MAX_SIZE = 524288; // 512 KB
 
-    /**
-     * @var Model
-     */
-    private $model;
-
     public function __construct()
     {
     }
 
-    public function scanFile(FileInfo $file_info, $root_path = null, &$signatures = null)
+    public function scanFile(FileInfo $file_info, $root_path, &$signatures)
     {
-        $signatures = $signatures ?: $this->getSignatures();
-        $root_path  = $root_path ?: $this->getRootPath();
-
         try {
             $output = $this->scanFileForSignatures($file_info, $root_path, $signatures);
         } catch (SignaturesScannerException $e) {
@@ -66,11 +57,8 @@ class Controller
      * @return Verdict Verdict or Error Array
      * @throws SignaturesScannerException
      */
-    private function scanFileForSignatures(FileInfo $file_info, $root_path = null, &$signatures = null)
+    private function scanFileForSignatures(FileInfo $file_info, $root_path, &$signatures)
     {
-        $signatures = $signatures ?: $this->getSignatures();
-        $root_path  = $root_path ?: $this->getRootPath();
-
         $output = new Verdict();
 
         if ( file_exists($root_path . $file_info->path) ) {
@@ -134,25 +122,5 @@ class Controller
         }
 
         return $output;
-    }
-
-    /**
-     * Get signatures uploaded
-     *
-     * @return array
-     */
-    private function getSignatures()
-    {
-        return $this->model->getSignatures();
-    }
-
-    /**
-     * Get root path of the files will be checked
-     *
-     * @return string
-     */
-    private function getRootPath()
-    {
-        return $this->model->getRootPath();
     }
 }

@@ -4,19 +4,11 @@ namespace CleantalkSP\Common\Scanner\HeuristicAnalyser;
 
 use CleantalkSP\Common\Helpers\Arr;
 use CleantalkSP\Common\Scanner\HeuristicAnalyser\Exceptions\HeuristicScannerException;
-use CleantalkSP\Common\Scanner\HeuristicAnalyser\Model\Model;
 use CleantalkSP\Common\Scanner\HeuristicAnalyser\Structures\FileInfo;
 use CleantalkSP\Common\Scanner\HeuristicAnalyser\Structures\Verdict;
 
 class Controller
 {
-    const FILE_MAX_SIZE = 524288; // 512 KB
-
-    /**
-     * @var Model
-     */
-    private $model;
-
     /**
      * @var string
      *
