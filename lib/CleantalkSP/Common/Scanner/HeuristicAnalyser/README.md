@@ -15,18 +15,18 @@ require_once 'vendor/autoload.php';
 use CleantalkSP\Common\Scanner\HeuristicAnalyser\Controller;
 use CleantalkSP\Common\Scanner\HeuristicAnalyser\Structures\FileInfo;
 
-// MyModel class need to be extended \CleantalkSP\Common\Scanner\HeuristicAnalyser\Model\Model
-$my_model = new myMoodel();
+$file_path = '/bad/index.php';
+$root_dir_patn = __DIR__;
 
 // Instantiate the scanner module
-$heuristic_scanner = new Controller($my_model);
+$heuristic_scanner = new Controller();
 
 // Prepare files information
-$file_to_check = new FileInfo(
-    'name_of_the_file.php',
-    'full_hash'
-);
+$file_to_check = new FileInfo($file_path);
 
-// $res will contain the scanning result
-$res = $heuristic_scanner->scanFile($file_to_check);
+
+$res = $heuristic_scanner->scanFile($file_to_check, $root_dir_patn);
+
+var_dump($res); // $res will contain the scanning result
+var_dump($heuristic_scanner->final_code); // $final_code will contain the de-obfuscated code
 ```

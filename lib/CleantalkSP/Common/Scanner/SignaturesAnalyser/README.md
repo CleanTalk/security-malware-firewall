@@ -15,18 +15,21 @@ require_once 'vendor/autoload.php';
 use CleantalkSP\Common\Scanner\SignaturesAnalyser\Controller;
 use CleantalkSP\Common\Scanner\SignaturesAnalyser\Structures\FileInfo;
 
-// MyModel class need to be extended \CleantalkSP\Common\Scanner\SignaturesAnalyser\Model\Model
-$my_model = new myMoodel();
+$file_path = '/bad/index.php';
+$root_dir_patn = __DIR__;
+$sigantures = []; // Get signatures from the cloud
 
 // Instantiate the scanner module
-$signatures_scanner = new Controller($my_model);
+$signatures_scanner = new Controller();
 
 // Prepare files information
 $file_to_check = new FileInfo(
-    'name_of_the_file.php',
+    $file_path,
     'full_hash'
 );
 
 // $res will contain the scanning result
-$res = $signatures_scanner->scanFile($file_to_check);
+$res = $signatures_scanner->scanFile($file_to_check, $root_dir_patn, $sigantures);
+
+var_dump($res); // $res will contain the scanning result
 ```
