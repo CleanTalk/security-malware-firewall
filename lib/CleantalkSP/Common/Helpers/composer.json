@@ -1,0 +1,25 @@
+{
+  "name": "cleantalk/spbct-helpers",
+  "description": "CleanTalk SPBCT Helpers classes",
+  "type": "cleantalk-spbct-lib",
+  "authors": [
+    {
+      "name": "CleanTalk Team",
+      "email": "support@cleantalk.org"
+    }
+  ],
+  "license": "GPL-3.0-or-later",
+  "autoload": {
+    "psr-4": {
+      "CleantalkSP\\Common\\Helpers\\": "./"
+    }
+  },
+  "config": {
+    "allow-plugins": {
+      "cleantalk/spbct-installer": true
+    }
+  },
+  "require": {
+    "cleantalk/spbct-installer": "*"
+  }
+}
