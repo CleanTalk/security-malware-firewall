@@ -22,12 +22,7 @@ class Entropy
      */
     public function __construct($path)
     {
-        if ( version_compare(PHP_VERSION, '8.1', '>=') && extension_loaded('mbstring') ) {
-            $this->is_file_suspicious = $this->analyseFile($path);
-        } else {
-            // Do not check anything
-            $this->is_file_suspicious = false;
-        }
+        $this->is_file_suspicious = $this->analyseFile($path);
     }
 
     /**

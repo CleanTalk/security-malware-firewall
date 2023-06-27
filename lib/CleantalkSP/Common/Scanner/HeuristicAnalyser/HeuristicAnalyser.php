@@ -224,7 +224,7 @@ class HeuristicAnalyser
         $this->evaluations     = new Evaluations($this->tokens, $this->variables, $this->includes, $this->sqls);
         $this->code_style      = new CodeStyle($this->tokens);
 
-        if ( isset($input['path']) ) {
+        if ( isset($input['path']) && version_compare(PHP_VERSION, '8.1', '>=') && extension_loaded('mbstring') ) {
             // Do not run entropy analysis on included constructs
             $this->entropyAnalyser = new Entropy($input['path']);
         }
