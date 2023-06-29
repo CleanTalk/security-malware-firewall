@@ -497,6 +497,7 @@ class Tokens implements \Iterator, \ArrayAccess, \Countable
     /**
      * @return void
      */
+    #[\ReturnTypeWillChange]
     public function rewind()
     {
         $this->repeats++;
@@ -507,6 +508,7 @@ class Tokens implements \Iterator, \ArrayAccess, \Countable
     /**
      * @return int
      */
+    #[\ReturnTypeWillChange]
     public function key()
     {
         return $this->position;
@@ -515,6 +517,7 @@ class Tokens implements \Iterator, \ArrayAccess, \Countable
     /**
      * @return Token
      */
+    #[\ReturnTypeWillChange]
     public function current()
     {
         return $this->tokens[$this->position];
@@ -523,6 +526,7 @@ class Tokens implements \Iterator, \ArrayAccess, \Countable
     /**
      * @return void
      */
+    #[\ReturnTypeWillChange]
     public function next()
     {
         $this->position++;
@@ -531,6 +535,7 @@ class Tokens implements \Iterator, \ArrayAccess, \Countable
     /**
      * @return bool
      */
+    #[\ReturnTypeWillChange]
     public function valid()
     {
         while (
@@ -554,6 +559,7 @@ class Tokens implements \Iterator, \ArrayAccess, \Countable
      *
      * @return bool
      */
+    #[\ReturnTypeWillChange]
     public function offsetExists($offset)
     {
         return isset($this->tokens[$offset]);
@@ -564,6 +570,7 @@ class Tokens implements \Iterator, \ArrayAccess, \Countable
      *
      * @return Token
      */
+    #[\ReturnTypeWillChange]
     public function offsetGet($offset)
     {
         $offset = $this->convertOffset($offset);
@@ -579,6 +586,7 @@ class Tokens implements \Iterator, \ArrayAccess, \Countable
      *
      * @return void
      */
+    #[\ReturnTypeWillChange]
     public function offsetSet($offset, $value)
     {
         $offset = $this->convertOffset($offset);
@@ -591,6 +599,7 @@ class Tokens implements \Iterator, \ArrayAccess, \Countable
     /**
      * @inheritDoc
      */
+    #[\ReturnTypeWillChange]
     public function offsetUnset($offset)
     {
         unset($this->tokens[$offset]);
@@ -600,6 +609,7 @@ class Tokens implements \Iterator, \ArrayAccess, \Countable
      * @inheritDoc
      * @psalm-suppress PossiblyUnusedMethod
      */
+    #[\ReturnTypeWillChange]
     public function count()
     {
         return $this->max_position;
