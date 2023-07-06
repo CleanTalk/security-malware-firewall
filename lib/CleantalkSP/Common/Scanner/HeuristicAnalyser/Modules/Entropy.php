@@ -54,6 +54,9 @@ class Entropy
                 continue;
             }
             $num_tokens = count($encoder->encode($variable));
+            if ( ! $num_tokens ) {
+                continue;
+            }
             $res = strlen($variable) / $num_tokens;
             if ( $res < 2 ) {
                 $detected_unreadable_variables[$variables_obj[$variable][0][2]] = [$variable];
@@ -89,6 +92,9 @@ class Entropy
 
             foreach ( $filtered_names as $filtered_name ) {
                 $num_tokens = count($encoder->encode($filtered_name));
+                if ( ! $num_tokens ) {
+                    continue;
+                }
                 $res = strlen($filtered_name) / $num_tokens;
                 $sum += $res;
             }
