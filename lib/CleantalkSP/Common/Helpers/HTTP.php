@@ -2,6 +2,7 @@
 
 namespace CleantalkSP\Common\Helpers;
 
+use CleantalkSP\Common\Validate;
 use CleantalkSP\Templates\Singleton;
 use CleantalkSP\Common\HTTP\Request;
 
@@ -79,27 +80,47 @@ class HTTP
      *
      * @param string $url
      *
-     * @return array|string[]
+     * @return false|int
      */
     public static function getResponseCode($url)
     {
         $http = new Request();
 
-        return $http->setUrl($url)
-                    ->setPresets(['get_code', 'no_cache'])
-                    ->request();
+        $code = $http->setUrl($url)
+            ->setPresets(['get_code', 'no_cache'])
+            ->request();
+
+        if (!empty($code['error'])) {
+            return false;
+        }
+
+        if (is_array($code)) {
+            $code  = reset($code);
+        }
+
+        if (is_string($code)) {
+            $code = (int) $code;
+        }
+
+        return Validate::isValidHTTPResponseCode($code) ? $code : false;
     }
 
     /**
      * Wrapper for http_request
      * Requesting data via HTTP request with GET method
      *
-     * @param string $url
+     * @param string $url url of the source
+     * @param bool $check_response_code flag to check if response code is 200, default is true.
+     * If code is incorrect return array with error HTTP_RESPONSE_BAD.
      *
      * @return array|mixed|string
      */
-    public static function getContentFromURL($url)
+    public static function getContentFromURL($url, $check_response_code = true)
     {
+        if ( $check_response_code && static::getResponseCode($url) !== 200 ) {
+            return array('error' => 'HTTP_RESPONSE_BAD');
+        }
+
         $http = new Request();
 
         return $http
@@ -135,12 +156,6 @@ class HTTP
      */
     public static function getDataFromRemoteGZ($url)
     {
-        // Check the response code
-        $response_code = static::getResponseCode($url);
-        if (is_int($response_code) && $response_code !== 200) { // Check if it's there
-            return array('error' => 'Bad HTTP response from file location: ' . $response_code);
-        }
-
         // Get data
         $data = static::getContentFromURL($url);
         if (! empty($data['error'])) {
