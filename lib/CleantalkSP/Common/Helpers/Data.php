@@ -163,8 +163,8 @@ class Data
                     }
                 }
             }
-
-            return rmdir($dir_path);
+            //ignore rmd warns if folder contains . prefix in files/folders
+            return @rmdir($dir_path);
         }
 
         return true;
