@@ -3,6 +3,7 @@
 namespace CleantalkSP\Common\Scanner\HeuristicAnalyser;
 
 use CleantalkSP\Common\Scanner\HeuristicAnalyser\DataStructures\ExtendedSplFixedArray;
+use CleantalkSP\Common\Scanner\HeuristicAnalyser\DataStructures\Token;
 use CleantalkSP\Common\Scanner\HeuristicAnalyser\Modules\CodeStyle;
 use CleantalkSP\Common\Scanner\HeuristicAnalyser\Modules\Entropy;
 use CleantalkSP\Common\Scanner\HeuristicAnalyser\Modules\Evaluations;
@@ -103,6 +104,17 @@ class HeuristicAnalyser
             'str_rot13',
             'syslog',
         ),
+    );
+
+    private $super_globals = array(
+        '$_GET',
+        '$_POST',
+        '$_COOKIE',
+        '$_FILES',
+        '$_SERVER',
+        '$GLOBALS',
+        '$_SESSION',
+        '$_REQUEST',
     );
 
     /**
@@ -417,6 +429,13 @@ class HeuristicAnalyser
                             $set_of_functions,
                             true
                         );
+
+                        // If common bad structures found, then check containment for superglobals
+                        if ($found_malware_key !== false && $this->checkingSuperGlobalsInTheSystemCommands($this->tokens->current)) {
+                            $this->verdict['CRITICAL'][$this->tokens->current->line][] = 'global variables in a sys command';
+                            break;
+                        }
+
                         $this->verdict[$severity][$this->tokens->current->line][] = $set_of_functions[$found_malware_key];
                     }
                 }
@@ -583,6 +602,26 @@ class HeuristicAnalyser
             return true;
         }
 
+        return false;
+    }
+
+    /**
+     * Check if super global variables found in the token applications.
+     * @param Token $token
+     * @return bool
+     */
+    private function checkingSuperGlobalsInTheSystemCommands(DataStructures\Token $token)
+    {
+        //search for next semicolon to find depth of seek
+        $next_semicolon = $this->tokens->searchForward($token->key, ';');
+        $depth = $next_semicolon ? $next_semicolon - $token->key : 0;
+        foreach ($this->super_globals as $super_global) {
+            //search for superglobs usage
+            $forward_look_super_globals = $this->tokens->searchForward($token->key, $super_global, $depth);
+            if (false !== $forward_look_super_globals) {
+                return true;
+            }
+        }
         return false;
     }
 
