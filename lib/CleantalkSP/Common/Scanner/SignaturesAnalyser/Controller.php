@@ -10,7 +10,7 @@ use CleantalkSP\Common\Scanner\SignaturesAnalyser\Exceptions\SignaturesScannerEx
 
 class Controller
 {
-    const FILE_MAX_SIZE = 524288; // 512 KB
+    const FILE_MAX_SIZE = 2621440; // 2.5 MB
 
     public function __construct()
     {
