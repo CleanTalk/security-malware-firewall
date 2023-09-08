@@ -613,8 +613,8 @@ class HeuristicAnalyser
     private function checkingSuperGlobalsInTheSystemCommands(DataStructures\Token $token)
     {
         //search for next semicolon to find depth of seek
-        $next_semicolon = $this->tokens->searchForward($token->key, ';');
-        $depth = $next_semicolon ? $next_semicolon - $token->key : 0;
+        $end_of_expression = $this->tokens->searchForward($token->key, array(';','`','?'));
+        $depth = $end_of_expression ? $end_of_expression - $token->key : 0;
         foreach ($this->super_globals as $super_global) {
             //search for superglobs usage
             $forward_look_super_globals = $this->tokens->searchForward($token->key, $super_global, $depth);
