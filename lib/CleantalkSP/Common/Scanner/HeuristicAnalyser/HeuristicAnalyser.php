@@ -88,6 +88,7 @@ class HeuristicAnalyser
             'eval',
             'assert',
             'create_function',
+            'shell_exec',
             // 'unserialize',
         ),
         'DANGER'     => array(
@@ -97,7 +98,6 @@ class HeuristicAnalyser
             'exec',
             'pcntl_exec',
             'popen',
-            'shell_exec',
             '`',
         ),
         'SUSPICIOUS' => array(
