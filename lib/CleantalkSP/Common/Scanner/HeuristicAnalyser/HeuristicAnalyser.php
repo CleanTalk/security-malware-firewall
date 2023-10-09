@@ -423,16 +423,21 @@ class HeuristicAnalyser
                     )
                 ) {
                     // From common bad_constructs
-                    if (in_array(trim((string)$this->tokens->current->value, '\''), $set_of_functions, true)) {
-                        $found_malware_key                                        = array_search(
-                            $this->tokens->current->value,
-                            $set_of_functions,
-                            true
-                        );
+                    $current_token_value = trim((string)$this->tokens->current->value, '\'');
+                    if (in_array($current_token_value, $set_of_functions, true)) {
+                        $found_malware_key = array_search($current_token_value, $set_of_functions, true);
 
                         // If common bad structures found, then check containment for superglobals
                         if ($found_malware_key !== false && $this->checkingSuperGlobalsInTheSystemCommands($this->tokens->current)) {
                             $this->verdict['CRITICAL'][$this->tokens->current->line][] = 'global variables in a sys command';
+                            break;
+                        }
+
+                        // If the current token is backtick, so we have to check shell command existing inside the backticks.
+                        if ( $current_token_value === '`' ) {
+                            if ( $this->checkingShellCommand($this->tokens->current) ) {
+                                $this->verdict['CRITICAL'][$this->tokens->current->line][] = 'shell command inside the backticks';
+                            }
                             break;
                         }
 
@@ -620,6 +625,30 @@ class HeuristicAnalyser
             $forward_look_super_globals = $this->tokens->searchForward($token->key, $super_global, $depth);
             if (false !== $forward_look_super_globals) {
                 return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Checking if the backticks "`" contains a shell command.
+     *
+     * @param Token $token
+     * @return bool
+     */
+    private function checkingShellCommand(DataStructures\Token $token)
+    {
+        $end_of_expression = $this->tokens->searchForward($token->key, '`');
+
+        if ( $end_of_expression ) {
+            $tokens = $this->tokens->getRange($token->key + 1, $end_of_expression - 1);
+            if ( count($tokens) > 0 ) {
+                $first_token_value = trim($tokens[0][1], "'\"");
+                $exploded_command = explode(' ', trim($first_token_value, "'\""));
+                $command = $exploded_command[0];
+                if ( $command && preg_match('#^[a-z]{2,}\.*_*\d*[a-z]*#', $command) ) {
+                    return true;
+                }
             }
         }
         return false;
