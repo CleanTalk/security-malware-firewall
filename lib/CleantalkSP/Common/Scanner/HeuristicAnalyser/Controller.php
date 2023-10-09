@@ -68,17 +68,30 @@ class Controller
         $output->includes = $scanner->getIncludes();
 
         // Processing results
-        if ( ! empty($verdict) ) {
+        if ( !empty($verdict) ) {
             $output->weak_spots = $verdict;
-            $output->severity   = array_key_exists('CRITICAL', $verdict) || array_key_exists('SIGNATURES', $verdict) ? 'CRITICAL' : (array_key_exists(
-                'DANGER',
-                $verdict
-            ) ? 'DANGER' : 'SUSPICIOUS');
-            $output->status     = array_key_exists('CRITICAL', $verdict) || array_key_exists('SIGNATURES', $verdict) || array_key_exists('SUSPICIOUS', $verdict)  ? 'INFECTED' : 'OK';
+            $output->severity = (
+                array_key_exists('CRITICAL', $verdict) ||
+                array_key_exists('SIGNATURES', $verdict)
+            )
+                ? 'CRITICAL'
+                : (
+                array_key_exists('DANGER', $verdict)
+                    ? 'DANGER'
+                    : 'SUSPICIOUS'
+                );
+            $output->status = (
+                array_key_exists('CRITICAL', $verdict) ||
+                array_key_exists('SIGNATURES', $verdict) ||
+                array_key_exists('SUSPICIOUS', $verdict) ||
+                array_key_exists('DANGER', $verdict)
+            )
+                ? 'INFECTED'
+                : 'OK';
         } else {
             $output->weak_spots = null;
-            $output->severity   = null;
-            $output->status     = 'OK';
+            $output->severity = null;
+            $output->status = 'OK';
         }
 
         $this->final_code = $scanner->deobfuscated_code;
