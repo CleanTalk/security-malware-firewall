@@ -184,7 +184,7 @@ class Data
         }
 
         if (is_file($path)) {
-            return unlink($path);
+            return @unlink($path);
         }
 
         if (is_dir($path)) {
