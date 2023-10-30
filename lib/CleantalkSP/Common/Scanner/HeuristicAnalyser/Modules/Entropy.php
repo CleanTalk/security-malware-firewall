@@ -47,6 +47,7 @@ class Entropy
         $encoder = new Encoder();
         $detected_unreadable_variables = [];
         foreach ( $variable_names as $variable ) {
+            // do not change empty state! this change is from heur package!
             if ( empty($variables_obj[$variable]) ) {
                 continue;
             }
