@@ -27,7 +27,7 @@ class HTTP
     /**
      * @var array Stored HTTP headers
      */
-    private $http_headers = [];
+    public $http_headers = [];
 
     /**
      * Appends given parameter(s) to URL considering other parameters
