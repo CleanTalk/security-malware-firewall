@@ -15,20 +15,6 @@ class CodeStyle
     const CRITICAL_CODE_STRING_LENGTH = 1000;
 
     /**
-     * Holds all lines length
-     * Indexed by line numbers
-     *
-     * @var int[]
-     */
-    private $line_lengths = array();
-
-    /**
-     *
-     * @var int[]
-     */
-    private $long_line_nums;
-
-    /**
      * Holds numbers of critical long lines
      *
      * @var int[]
@@ -150,6 +136,8 @@ class CodeStyle
             $content .= $token_value;
         }
 
+        preg_match_all('#[^a-zA-Z\d\s:\.,]#', $content, $symbols);
+
         if (isset($symbols[0]) && count($symbols[0]) > 0) {
             return strlen($content) / count($symbols[0]);
         }
@@ -164,7 +152,7 @@ class CodeStyle
         preg_match_all('#[a-zA-Z\d_\-\+]+#', $content, $words);
         $words = isset($words[0]) ? $words[0] : [];
 
-        $words = array_filter($words, function($word) {
+        $words = array_filter($words, function ($word) {
             return strlen($word) > 5;
         });
         $words = array_values($words);
