@@ -206,6 +206,9 @@ class Tokens implements \Iterator, \ArrayAccess, \Countable
         }
 
         // Set current token
+        if ( !isset($this->tokens[$this->position]) ) {
+            return;
+        }
         $this->current      = $this->tokens[$this->position];
         $this->current->key = $this->position;
 
@@ -419,6 +422,26 @@ class Tokens implements \Iterator, \ArrayAccess, \Countable
         $this->setIterationTokens();
 
         return $out;
+    }
+
+    public function unsetExpression($token)
+    {
+        if ( is_numeric($token) ) {
+            $key_to_unset = $token;
+        } else {
+            $key_to_unset = $this->$token->key ?: $this->convertOffset($token);
+        }
+
+        $tokens_of_expression = $this->getRange(
+            $this->searchBackward($key_to_unset, ';') - 1,
+            $this->searchForward($key_to_unset, ';') - 1
+        );
+
+        if ($tokens_of_expression) {
+            foreach ($tokens_of_expression as $key => $token) {
+                $this->unsetTokens($token[3]);
+            }
+        }
     }
 
     /**

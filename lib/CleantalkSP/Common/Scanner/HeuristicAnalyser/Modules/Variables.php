@@ -409,6 +409,59 @@ class Variables
         }
     }
 
+    public function concatenateVars($key)
+    {
+        if (
+            $this->tokens->current->type === 'T_VARIABLE' &&
+            $this->tokens->next1->type === 'T_CONCAT_EQUAL' &&
+            $this->tokens->next2->type === 'T_CONSTANT_ENCAPSED_STRING'
+        ) {
+            $var_first_declaration = $this->tokens->searchForward(0, $this->tokens->current[1]); // 10
+            $var_expression = $this->tokens->getRange(
+                $this->tokens[$var_first_declaration][3],
+                $this->tokens->searchForward($this->tokens[$var_first_declaration][3], ';') - 1
+            );
+
+            $tokens_of_variable_for_concat = $this->tokens->getRange(
+                $this->tokens->current[3] + 3,
+                $this->tokens->searchForward($this->tokens->current[3], ';') - 1
+            );
+
+            foreach ( $tokens_of_variable_for_concat as $token ) {
+                if ($token->type === 'T_CONSTANT_ENCAPSED_STRING') {
+                    $last_txt_token = $var_expression[count($var_expression)-1][1];
+                    $var_expression[count($var_expression)-1][1] = implode('', [
+                        mb_substr($last_txt_token, 0, -1),
+                        trim((string)$token[1], '\'\"'),
+                        mb_substr($last_txt_token, -1)
+                    ]);
+                }
+            }
+
+            $this->tokens->unsetExpression('current');
+
+            return true;
+        }
+
+        return false;
+    }
+
+    public function replaceVars($key)
+    {
+        if ( $this->tokens->current->type === 'T_VARIABLE' ) {
+            if ( $this->tokens->next1->value === '(' ) {
+                $var_first_declaration = $this->tokens->searchForward(0, $this->tokens->current->value); // 10
+
+                $var_expression = $this->tokens->getRange(
+                    $this->tokens[$var_first_declaration][3],
+                    $this->tokens->searchForward($this->tokens[$var_first_declaration][3], ';') - 1
+                );
+
+                $this->tokens->current->value = trim($var_expression[2][1], '\'\"');
+            }
+        }
+    }
+
     /**
      * Replace variables with its content
      *
