@@ -409,7 +409,7 @@ class Variables
         }
     }
 
-    public function concatenateVars($key)
+    public function concatenateVars($_key)
     {
         if (
             $this->tokens->current->type === 'T_VARIABLE' &&
@@ -429,8 +429,8 @@ class Variables
 
             foreach ( $tokens_of_variable_for_concat as $token ) {
                 if ($token->type === 'T_CONSTANT_ENCAPSED_STRING') {
-                    $last_txt_token = $var_expression[count($var_expression)-1][1];
-                    $var_expression[count($var_expression)-1][1] = implode('', [
+                    $last_txt_token = $var_expression[count($var_expression) - 1][1];
+                    $var_expression[count($var_expression) - 1][1] = implode('', [
                         mb_substr($last_txt_token, 0, -1),
                         trim((string)$token[1], '\'\"'),
                         mb_substr($last_txt_token, -1)
@@ -446,11 +446,11 @@ class Variables
         return false;
     }
 
-    public function replaceVars($key)
+    public function replaceVars($_key)
     {
         if ( $this->tokens->current->type === 'T_VARIABLE' ) {
             if ( $this->tokens->next1->value === '(' ) {
-                $var_first_declaration = $this->tokens->searchForward(0, $this->tokens->current->value); // 10
+                $var_first_declaration = $this->tokens->searchForward(0, (string)$this->tokens->current->value); // 10
 
                 $var_expression = $this->tokens->getRange(
                     $this->tokens[$var_first_declaration][3],
