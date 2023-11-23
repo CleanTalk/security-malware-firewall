@@ -31,8 +31,8 @@ class FunctionsDecryptorService
         foreach ( $this->tokens as $index => $token ) {
             if (
                 $token &&
-                $token->type === 'T_STRING' &&
-                in_array($token->value, $this->suspiciousFunctions)
+                ($token->type === 'T_STRING' || $token->type === 'T_CONSTANT_ENCAPSED_STRING'  || $token->type === 'T_VARIABLE') &&
+                in_array(strtolower(trim((string)$token->value, '\'\"')), $this->suspiciousFunctions)
             ) {
                 $this->results[$index] = array(
                     'f_name' => $token->value
