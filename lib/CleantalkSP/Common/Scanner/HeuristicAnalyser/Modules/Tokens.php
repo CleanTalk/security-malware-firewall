@@ -433,12 +433,12 @@ class Tokens implements \Iterator, \ArrayAccess, \Countable
         }
 
         $tokens_of_expression = $this->getRange(
-            $this->searchBackward($key_to_unset, ';') - 1,
+            $this->searchBackward((int)$key_to_unset, ';') - 1,
             $this->searchForward($key_to_unset, ';') - 1
         );
 
         if ($tokens_of_expression) {
-            foreach ($tokens_of_expression as $key => $token) {
+            foreach ($tokens_of_expression as $_key => $token) {
                 $this->unsetTokens($token[3]);
             }
         }
