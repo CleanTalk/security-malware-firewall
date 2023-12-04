@@ -417,10 +417,19 @@ class Variables
             $this->tokens->next2->type === 'T_CONSTANT_ENCAPSED_STRING'
         ) {
             $var_first_declaration = $this->tokens->searchForward(0, $this->tokens->current[1]); // 10
+
+            if ( ! $var_first_declaration ) {
+                return false;
+            }
+
             $var_expression = $this->tokens->getRange(
                 $this->tokens[$var_first_declaration][3],
                 $this->tokens->searchForward($this->tokens[$var_first_declaration][3], ';') - 1
             );
+
+            if ( ! count($var_expression) ) {
+                return false;
+            }
 
             $tokens_of_variable_for_concat = $this->tokens->getRange(
                 $this->tokens->current[3] + 3,
@@ -452,12 +461,18 @@ class Variables
             if ( $this->tokens->next1->value === '(' ) {
                 $var_first_declaration = $this->tokens->searchForward(0, (string)$this->tokens->current->value); // 10
 
+                if ( ! $var_first_declaration ) {
+                    return false;
+                }
+
                 $var_expression = $this->tokens->getRange(
                     $this->tokens[$var_first_declaration][3],
                     $this->tokens->searchForward($this->tokens[$var_first_declaration][3], ';') - 1
                 );
 
-                $this->tokens->current->value = trim($var_expression[2][1], '\'\"');
+                if ( isset($var_expression[2][1]) ) {
+                    $this->tokens->current->value = trim($var_expression[2][1], '\'\"');
+                }
             }
         }
     }
