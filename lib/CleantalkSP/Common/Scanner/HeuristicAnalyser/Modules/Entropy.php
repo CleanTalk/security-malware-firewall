@@ -59,7 +59,7 @@ class Entropy
                 continue;
             }
             $res = strlen($variable) / $num_tokens;
-            if ( $res < 2 ) {
+            if ( $res < 2 && isset($variables_obj[$variable][0][2]) ) {
                 $detected_unreadable_variables[$variables_obj[$variable][0][2]] = [$variable];
             }
         }
