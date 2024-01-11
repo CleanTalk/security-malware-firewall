@@ -76,7 +76,7 @@ class Arr
                 $arr1[$key] = self::mergeWithSavingNumericKeysRecursive($arr1[$key], $val);
                 // Scalar | array => array
             } elseif (isset($arr1[$key]) && ! is_array($arr1[$key]) && is_array($val)) {
-                $tmp            = $arr1[$key] =
+                $tmp = $arr1[$key];
                 $arr1[$key] = $val;
                 $arr1[$key][] = $tmp;
                 // array  | scalar => array

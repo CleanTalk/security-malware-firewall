@@ -70,21 +70,13 @@ class Controller
         // Processing results
         if ( !empty($verdict) ) {
             $output->weak_spots = $verdict;
-            $output->severity = (
-                array_key_exists('CRITICAL', $verdict) ||
-                array_key_exists('SIGNATURES', $verdict)
-            )
+            $output->severity = array_key_exists('SIGNATURES', $verdict)
                 ? 'CRITICAL'
-                : (
-                array_key_exists('DANGER', $verdict)
-                    ? 'DANGER'
-                    : 'SUSPICIOUS'
-                );
+                : 'SUSPICIOUS';
             $output->status = (
                 array_key_exists('CRITICAL', $verdict) ||
                 array_key_exists('SIGNATURES', $verdict) ||
-                array_key_exists('SUSPICIOUS', $verdict) ||
-                array_key_exists('DANGER', $verdict)
+                array_key_exists('SUSPICIOUS', $verdict)
             )
                 ? 'INFECTED'
                 : 'OK';
