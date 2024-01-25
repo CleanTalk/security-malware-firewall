@@ -120,6 +120,32 @@ class CodeStyle
         return $result;
     }
 
+    /**
+     * Check if file contains PHP open tags ("<\?php" or `<\?`).
+     * @return bool
+     */
+    public function hasPHPOpenTags()
+    {
+        foreach ( $this->tokens as $_token => $content ) {
+            if ( isset($content[0]) && isset($this->tokens->next1[0]) ) {
+                if ( $content[0] === 'T_OPEN_TAG' ) {
+                    //check if open tag is short
+                    $is_short = isset($content[1]) && $content[1] === '<?';
+                    if (
+                        // should be whitespaces after tag
+                        $is_short && $this->tokens->next1[0] === 'T_WHITESPACE' ||
+                        // should be whitespaces or variable after tag
+                        !$is_short && in_array($this->tokens->next1[0], array('T_WHITESPACE', 'T_VARIABLE'))
+                    ) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
+
     private function proportionOfSpecialSymbols()
     {
         $content = '';
