@@ -294,6 +294,11 @@ class HeuristicAnalyser
      */
     public function processContent()
     {
+        // Skip files does not contain PHP code
+        if ( $this->extension !== 'php' && ! $this->code_style->hasPHPOpenTags() ) {
+            return;
+        }
+
         // Analysing code style
         // Do this, only for initial code
         if ( ! $this->evaluations->evaluations ) {
