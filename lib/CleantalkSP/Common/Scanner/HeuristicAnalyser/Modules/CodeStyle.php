@@ -62,13 +62,32 @@ class CodeStyle
 
         for ( $line_num = 1; isset($lines[$line_num - 1]); $line_num++ ) {
             try {
-                if ( strlen($lines[$line_num - 1]) > self::CRITICAL_CODE_STRING_LENGTH ) {
+                $line = $lines[$line_num - 1];
+                if ($this->analyseLineLengthsIsExceptions($line)) {
+                    continue;
+                }
+                if ( strlen($line) > self::CRITICAL_CODE_STRING_LENGTH ) {
                     $this->critical_long_line_nums[] = $line_num;
                 }
             } catch (\Exception $_e) {
                 continue;
             }
         }
+    }
+
+    /**
+     * Check exceptions for long line
+     *
+     * @param string $line
+     * @return bool
+     */
+    public function analyseLineLengthsIsExceptions($line)
+    {
+        if (preg_match('#^\s*<path\s+d="[^$][.\w\s-]+"\s*\/>#', $line, $match)) {
+            return true;
+        }
+
+        return false;
     }
 
     public function analyseUnreadableCode(&$content)
