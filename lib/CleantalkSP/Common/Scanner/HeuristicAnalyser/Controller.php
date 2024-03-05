@@ -41,7 +41,13 @@ class Controller
      */
     private function scanFileForHeuristic(FileInfo $file_info, $root_path)
     {
-        $scanner = new HeuristicAnalyser(array('path' => $root_path . $file_info->path));
+        if ( ! empty($file_info->content) ) {
+            $params = ['content' => $file_info->content];
+        } else {
+            $params = ['path' => $root_path . $file_info->path];
+        }
+
+        $scanner = new HeuristicAnalyser($params);
 
         $output = new Verdict();
 
