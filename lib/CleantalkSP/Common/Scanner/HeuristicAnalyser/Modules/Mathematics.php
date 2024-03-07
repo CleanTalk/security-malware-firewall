@@ -82,6 +82,10 @@ class Mathematics
     private function getTokensInsideBrackets($closing_bracket)
     {
         $start_position = $this->tokens->next1[3];
+        if ( is_null($start_position) ) {
+            // Returns empty array if no more tokens forward
+            return new ExtendedSplFixedArray();
+        }
         $closing_bracket_position = $this->tokens->searchForward($start_position, $closing_bracket);
         $tokens_inside_brackets = $this->tokens->getRange($start_position, $closing_bracket_position - 1);
 
