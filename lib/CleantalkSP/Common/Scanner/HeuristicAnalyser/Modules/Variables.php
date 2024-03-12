@@ -470,7 +470,7 @@ class Variables
                     $this->tokens->searchForward($this->tokens[$var_first_declaration][3], ';') - 1
                 );
 
-                if ( isset($var_expression[2][1]) ) {
+                if ( isset($var_expression[2]) && isset($var_expression[2][1]) ) {
                     $this->tokens->current->value = trim($var_expression[2][1], '\'\"');
                 }
             }
