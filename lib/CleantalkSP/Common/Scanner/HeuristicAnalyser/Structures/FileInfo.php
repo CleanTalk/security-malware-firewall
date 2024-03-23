@@ -20,8 +20,8 @@ class FileInfo
     public $weak_spots;
 
     /**
-     * @param $path
-     * @param $content
+     * @param string $path
+     * @param string $content
      *
      * @psalm-suppress PossiblyUnusedMethod
      */
