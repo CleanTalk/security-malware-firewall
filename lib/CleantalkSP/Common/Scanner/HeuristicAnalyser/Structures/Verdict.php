@@ -11,4 +11,8 @@ class Verdict
     public $severity;
     public $status;
     public $includes;
+    /**
+     * @var string
+     */
+    public $error_msg;
 }
