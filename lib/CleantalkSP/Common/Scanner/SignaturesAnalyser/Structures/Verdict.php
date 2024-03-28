@@ -10,4 +10,5 @@ class Verdict
     public $weak_spots = 'NULL';
     public $severity   = 'NULL';
     public $status     = 'UNKNOWN';
+    public $error_msg     = '';
 }
