@@ -22,9 +22,51 @@ class CodeStyle
     private $critical_long_line_nums = array();
 
     /**
+     * Holds numbers of comments noise lines
+     *
+     * @var int[]
+     */
+    private $comment_noise_line_nums = array();
+
+    /**
      * Check if file contains unreadable code
      */
     private $is_unreadable = false;
+
+    /**
+     * Check if weight of noise > 5
+     *
+     * @var bool
+     */
+    public $comments_noise = false;
+
+    /**
+     * Weight of noise
+     *
+     * @var int
+     */
+    private $noise_lines = 0;
+
+    /**
+     * Noise threshold
+     *
+     * @var int
+     */
+    private $noise_lines_threshold = 5;
+
+    /**
+     * Noise threshold
+     *
+     * @var int
+     */
+    private $noise_matches_threshold = 3;
+
+    /**
+     * Array for multi-line comments in one line
+     *
+     * @var array
+     */
+    private $matches = array();
 
     /**
      * Line numbers with tokens which should be on a different lines
@@ -56,6 +98,11 @@ class CodeStyle
         $this->tokens = $tokens;
     }
 
+    /**
+     * @param $content
+     * @return void
+     * @psalm-suppress UnusedMethod
+     */
     public function analyseLineLengths(&$content)
     {
         $lines = preg_split("/((\r?\n)|(\r\n?))/", $content);
@@ -95,7 +142,7 @@ class CodeStyle
         $proportion_spec_symbols = $this->proportionOfSpecialSymbols();
         $weight = $this->getWeightOfRandom($content);
 
-        if ($proportion_spec_symbols <= 3 || $weight > 1 ) {
+        if ($proportion_spec_symbols <= 3 || $weight > 1) {
             $this->is_unreadable = true;
         }
     }
@@ -132,8 +179,15 @@ class CodeStyle
         $values    = array_fill(0, count($line_nums), 'long line');
         $result    = array_combine($line_nums, $values);
 
+        //todo Merging on int indexes will rewrite current line weak_spot
         if ($this->is_unreadable) {
             $result = array_merge($result, [1 => 'unreadable']);
+        }
+
+        //todo This will replace other weak_spots on the line
+        if ($this->comments_noise) {
+            $first_comments_noise_line = (int)array_shift($this->comment_noise_line_nums);
+            $result[$first_comments_noise_line] = 'comments noise';
         }
 
         return $result;
@@ -226,5 +280,27 @@ class CodeStyle
         }
 
         return $weight;
+    }
+
+    public function analyseWeightOfNoise($content)
+    {
+        $lines = preg_split("/((\r?\n)|(\r\n?))/", $content);
+
+        // few multiline comments in one string
+        for ( $line_num = 1; isset($lines[$line_num - 1]); $line_num++ ) {
+            try {
+                $line = $lines[$line_num - 1];
+                preg_match_all('#\/\*\s*\w{1,5}\s*\*\/#', $line, $this->matches);
+                if (count($this->matches[0]) > $this->noise_matches_threshold) {
+                    $this->noise_lines++;
+                }
+                if ($this->noise_lines > $this->noise_lines_threshold) {
+                    $this->comment_noise_line_nums[] = $line_num;
+                    $this->comments_noise = true;
+                }
+            } catch (\Exception $_e) {
+                continue;
+            }
+        }
     }
 }
