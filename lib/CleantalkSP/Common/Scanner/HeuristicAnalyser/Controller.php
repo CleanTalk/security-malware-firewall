@@ -22,10 +22,18 @@ class Controller
 
     public function scanFile(FileInfo $file_info, $root_path)
     {
+        $output = new Verdict();
+        $output->weak_spots = null;
+        $output->severity   = null;
+        $output->status     = 'ERROR';
+        $output->includes   = array();
         try {
             $output = $this->scanFileForHeuristic($file_info, $root_path);
         } catch (HeuristicScannerException $e) {
-            $output = array('error' => $e->getMessage());
+            $output->error_msg = $e->getMessage();
+            return $output;
+        } catch (\Exception $e) {
+            $output->error_msg = 'UNKNOWN_INTERNAL_ERROR';
         }
 
         return $output;
@@ -38,6 +46,7 @@ class Controller
      * @param string $root_path Path to CMS's root folder
      *
      * @return Verdict False or Array of found bad constructs sorted by severity
+     * @throws HeuristicScannerException
      */
     private function scanFileForHeuristic(FileInfo $file_info, $root_path)
     {
@@ -51,13 +60,6 @@ class Controller
 
         $output = new Verdict();
 
-        if ( ! empty($scanner->error) ) {
-            $output->weak_spots = null;
-            $output->severity   = null;
-            $output->status     = 'OK';
-            $output->includes   = array();
-            return $output;
-        }
         $scanner->processContent();
 
         // Saving only signatures from the previous result
