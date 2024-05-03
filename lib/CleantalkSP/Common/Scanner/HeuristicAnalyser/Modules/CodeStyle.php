@@ -2,6 +2,8 @@
 
 namespace CleantalkSP\Common\Scanner\HeuristicAnalyser\Modules;
 
+use CleantalkSP\Common\Scanner\HeuristicAnalyser\DataStructures\Token;
+
 class CodeStyle
 {
     /**
@@ -13,6 +15,26 @@ class CodeStyle
      * @var int shows how many symbols could contain normal code line
      */
     const CRITICAL_CODE_STRING_LENGTH = 1000;
+    /**
+     * @const How many different upper/lowercase chars should be provided to being get in weight count.
+     */
+    const RANDOM_CHAR_CASE_VOLATILITY_LIMIT = 3;
+    /**
+     * @const Minimum word length to check for random structures
+     */
+    const RANDOM_MIN_WORD_LEN = 5;
+    /**
+     * @const Maximum word length to check for random structures
+     */
+    const RANDOM_MAX_WORD_LEN = 5;
+    /**
+     * @const Sensitivity for random total weight
+     */
+    const RANDOM_TOTAL_WEIGHT_THRESHOLD = 1.00;
+    /**
+     * @const Sensitivity for special chars proportion
+     */
+    const SPECIAL_CHARS_PROPORTION_THRESHOLD = 0.33;
 
     /**
      * Holds numbers of critical long lines
@@ -137,12 +159,21 @@ class CodeStyle
         return false;
     }
 
-    public function analyseUnreadableCode(&$content)
+    /**
+     * Check if the code is human-unreadable.
+     * @param string $content File content.
+     * @return void
+     */
+    public function analyseHumanUnreadableCode($content)
     {
         $proportion_spec_symbols = $this->proportionOfSpecialSymbols();
-        $weight = $this->getWeightOfRandom($content);
+        $weight = $this->getWeightOfRandomCharStructures($content);
 
-        if ($proportion_spec_symbols <= 3 || $weight > 1) {
+        if (
+            $proportion_spec_symbols >= self::SPECIAL_CHARS_PROPORTION_THRESHOLD
+            ||
+            $weight > self::RANDOM_TOTAL_WEIGHT_THRESHOLD
+        ) {
             $this->is_unreadable = true;
         }
     }
@@ -219,64 +250,114 @@ class CodeStyle
         return false;
     }
 
+    /**
+     * Count special service chars like <>!= etc. and return the proportion to the total chars count.
+     * Uses $this->tokens as content source.
+     * @return float 0.0 -> 1.0
+     */
     private function proportionOfSpecialSymbols()
     {
-        $content = '';
+        $glued_content = '';
 
         foreach ($this->tokens->tokens as $token) {
             $token_value = '';
+            //convert token to array if object provided
+            if ($token instanceof Token) {
+                $token = $token->toArray();
+            }
             if (is_array($token)) {
+                //if the token is comment, skip it
                 if (in_array($token[0], [T_COMMENT, T_DOC_COMMENT])) {
                     continue;
                 }
                 $token_value = $token[1];
             }
+            // glue all
+            $glued_content .= $token_value;
+        }
+        if ( !empty($glued_content) ) {
+            //search for service chars
+            preg_match_all('#[^a-zA-Z\d\s:\.,]#', $glued_content, $symbols);
 
-            $content .= $token_value;
+            if (isset($symbols[0]) && count($symbols[0]) > 0) {
+                return count($symbols[0]) / (strlen($glued_content));
+            }
         }
 
-        preg_match_all('#[^a-zA-Z\d\s:\.,]#', $content, $symbols);
-
-        if (isset($symbols[0]) && count($symbols[0]) > 0) {
-            return strlen($content) / count($symbols[0]);
-        }
-
-        return 100;
+        return 0.0;
     }
 
-    private function getWeightOfRandom($content)
+    /**
+     * Break the content to a several `words` and run a couple of checks
+     * to calculate weight of random-char structures in this.
+     * Increments if:
+     * <ul>
+     * <li> "+" char provided</li>
+     * <li> char case volatility more than limit</li>
+     * <li> if the word contains a lexeme like `x8k`, `p9R` etc.</li>
+     * </ul>
+     * @param string $content File content.
+     * @return float Normal value is <= 1.00
+     */
+    private function getWeightOfRandomCharStructures($content)
     {
-        $weight = 0;
-
-        preg_match_all('#[a-zA-Z\d_\-\+]+#', $content, $words);
+        $weight = 0.0;
+        /**
+         * Find the words to check. Global regex.
+         */
+        preg_match_all('#[a-zA-Z\d_\-+\\\/]+#', $content, $words);
         $words = isset($words[0]) ? $words[0] : [];
-
         $words = array_filter($words, function ($word) {
-            return strlen($word) > 5 && strlen($word) < 50;
+            return strlen($word) > self::RANDOM_MIN_WORD_LEN && strlen($word) < self::RANDOM_MAX_WORD_LEN;
         });
         $words = array_values($words);
 
-        $words_weight = [];
+        /**
+         * Start check for each word.
+         */
+        $words_weight_data = [];
         foreach ($words as $word) {
-            $words_weight[$word] = 0;
-            $skip_caps_checking = false;
+            //init word random weight, could be between 0 -> 3
+            $words_weight_data[$word] = 0;
+
+            /**
+             * Check + char provided
+             */
+            //todo What is this for?
             if (strpos($word, '+') !== false) {
-                $words_weight[$word] += 1;
+                $words_weight_data[$word] += 1;
             }
+
+            /**
+             * Check char case volatility
+             */
             $lower_word = strtolower($word);
-            if ( strtolower($word) === $word || strtoupper($word) === $word ) {
-                $skip_caps_checking = true;
+            //skip case checking if no case difference
+            $skip_caps_checking = $lower_word === $word || strtoupper($word) === $word;
+            if ( ! $skip_caps_checking ) {
+                //get count of chars that has case difference
+                $count_of_case_volatile_chars = strlen($lower_word) - similar_text($lower_word, $word);
+                //inc weight if volatile chars count more than the limit
+                if ($count_of_case_volatile_chars > self::RANDOM_CHAR_CASE_VOLATILITY_LIMIT) {
+                    $words_weight_data[$word] += 1;
+                }
             }
-            if ( ! $skip_caps_checking && strlen($lower_word) - similar_text($lower_word, $word) > 3 ) {
-                $words_weight[$word] += 1;
-            }
+
+            /**
+             * Check if the word contains a lexeme like `x8k`, `p9R` etc
+             */
             if (preg_match('#[^\d]\d+[\w]#', $word)) {
-                $words_weight[$word] += 1;
+                $words_weight_data[$word] += 1;
             }
         }
 
-        if (count($words_weight) > 0) {
-            $weight = array_sum(array_values($words_weight)) / count($words_weight);
+        /**
+         * Calculate result.
+         * Result is a total sum of words weights divided by total count of words found in the content.
+         * Normal value is <= 1.
+         */
+        if ( !empty($words_weight_data) ) {
+            $weight = array_sum(array_values($words_weight_data)) / count($words_weight_data);
         }
 
         return $weight;
