@@ -106,6 +106,64 @@ class Strings
     }
 
     /**
+     * Convert file_get_contents(__DIR__ . '/file.example') to gathered content string
+     *
+     * @param string $current_file_path
+     * @return void
+     */
+    public function convertFileGetContentsToString($current_file_path)
+    {
+        if (
+            $this->tokens->current->type === 'T_STRING' &&
+            $this->tokens->current->value === 'file_get_contents' &&
+            $this->tokens->next1->value === '('
+        ) {
+            $start_position = $this->tokens->next1[3];
+            $closing_bracket_position = $this->tokens->searchForward($start_position, ')');
+            $tokens_inside_brackets = $this->tokens->getRange($start_position + 1, $closing_bracket_position - 1);
+
+            // Check against of nested bracers.
+            // @ToDo implement nested bracers values calculating
+            $is_nested_bracers = false;
+            foreach ( $tokens_inside_brackets as $token ) {
+                if ( $token->value === '(' ) {
+                    $is_nested_bracers = true;
+                }
+            }
+
+            if ( $is_nested_bracers ) {
+                return;
+            }
+
+            // Calculate path string
+            $path = '';
+            foreach ($tokens_inside_brackets as $token) {
+                if ( $token->isTypeOf('could_be_concatenated') ) {
+                    $path .= trim((string)$token->value, '\'');
+                }
+                if ( $token->type === 'T_DIR' ) {
+                    $path .= dirname($current_file_path);
+                }
+            }
+
+            if ( $path && file_exists($path) ) {
+                // Delete tokens which contained the file_get_contents expression
+                for ( $i = $start_position; $i <= $closing_bracket_position; $i++ ) {
+                    $this->tokens->unsetTokens($i);
+                }
+
+                // Insert newly calculated token with gathered content string
+                $this->tokens['current'] = new Token(
+                    'T_LNUMBER',
+                    @file_get_contents($path),
+                    $this->tokens->current->line,
+                    $this->tokens->current->key
+                );
+            }
+        }
+    }
+
+    /**
      * Concatenates simple strings with type T_CONSTANT_ENCAPSED_STRING
      *
      * @param int $key
