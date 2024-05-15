@@ -276,9 +276,22 @@ class CodeStyle
             $glued_content .= $token_value;
         }
         if ( !empty($glued_content) ) {
-            //search for service chars
-            preg_match_all('#[^a-zA-Z\d\s:\.,]#', $glued_content, $symbols);
-
+            /**
+             * This regexp match all symbols except letters, digits and whitespaces in a core. However,
+             * we would exclude some chars that usually not used in the code, but can be used in a human text.
+             * To check the list of all symbols that will be matched by this regexp, you can use this code:
+             *
+             *  $arr = array_count_values($symbols[0]);
+             *  asort($arr);
+             *  var_dump($arr);
+             *
+             */
+            preg_match_all('#[^\pL\s\d\'\"()*\-+;&_@?!.,:%`]#', $glued_content, $symbols);
+            /**
+             * Notice:
+             * Extended regexp to exclude more service chars, use or upgrade the current if there will be false positives:
+             * preg_match_all('#[^\pL\s\d\'\"()\[\]*{}\-_\\\/@<>?!=.,:%`]#', $glued_content, $symbols);
+             */
             if (isset($symbols[0]) && count($symbols[0]) > 0) {
                 return count($symbols[0]) / (strlen($glued_content));
             }
