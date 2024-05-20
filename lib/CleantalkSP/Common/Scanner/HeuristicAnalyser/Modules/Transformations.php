@@ -44,8 +44,7 @@ class Transformations
                     $data = base64_decode((string)$this->tokens->next2->value);
                     break;
                 case 'urldecode':
-                    $data = urldecode((string)$this->tokens->next2->value);
-                    break;
+                    return $this->transformUrlDecodeIntoTokens((string)$this->tokens->next2->value);
                 case 'rawurldecode':
                     $data = rawurldecode((string)$this->tokens->next2->value);
                     break;
@@ -150,6 +149,32 @@ class Transformations
             }
         }
         //hex2bin failed
+        return false;
+    }
+
+    /**
+     * Transform URL-encoded string into tokens.
+     * @param string $url_encoded_string
+     * @return bool
+     */
+    private function transformUrlDecodeIntoTokens($url_encoded_string)
+    {
+        if (is_string($url_encoded_string)) {
+            $decoded_data = @urldecode($url_encoded_string);
+
+            // Unset unnecessary tokens
+            $this->tokens->unsetTokens('next1', 'next2', 'next3');
+
+            // Add new token with the decoded data
+            $this->tokens['current'] = new Token(
+                'T_CONSTANT_ENCAPSED_STRING',
+                $decoded_data,
+                $this->tokens->current->line,
+                $this->tokens->current->key
+            );
+
+            return true;
+        }
         return false;
     }
 }

@@ -362,6 +362,14 @@ class HeuristicAnalyser
             }
 
             foreach ( $this->tokens as $key => $_current_token ) {
+                $this->variables->replaceArrayVars($key);
+            }
+
+            foreach ( $this->tokens as $key => $_current_token ) {
+                $this->strings->concatenateComplexStrings($key);
+            }
+
+            foreach ( $this->tokens as $key => $_current_token ) {
                 $this->variables->replaceVars($key);
             }
         } while ( $this->tokens->were_modified === true );
