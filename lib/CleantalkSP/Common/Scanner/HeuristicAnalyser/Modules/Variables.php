@@ -509,6 +509,10 @@ class Variables
                     $this->tokens->searchForward($this->tokens[$var_first_declaration][3], ';') - 1
                 );
 
+                if ( ! isset($var_expression[2][1][$this->tokens->next2->value + 1]) ) {
+                    return;
+                }
+
                 $this->tokens['current'] = new Token(
                     'T_CONSTANT_ENCAPSED_STRING',
                     '\'' . trim($var_expression[2][1][$this->tokens->next2->value + 1], '\'\"') . '\'',
