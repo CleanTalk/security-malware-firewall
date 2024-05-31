@@ -36,8 +36,8 @@ class AdminBannerRenew extends AdminBannerAbstract
         $this->banners_handler = $banners_handler;
         $this->banner_id       = $this->prefix . $this::NAME . '_' . $this->banners_handler->getUserId();
 
-        $utm_marks = 'cp_mode=security&utm_source=wp-backend&utm_medium=cpc&utm_campaign=WP%%20backend%%20trial_security';
-        $link = 'https://p.cleantalk.org/?account=undefined&currency=USD&domains=&extra=true&featured=&fua=true&period=Year&period_interval=3&product_id=4&renew=true&tariff_id=191&user_token=' . $banners_handler->getUserToken() . $utm_marks;
+        $utm_marks = '&utm_source=wp-backend&utm_medium=cpc&utm_campaign=WP%%20backend%%20trial_security';
+        $link = 'https://p.cleantalk.org/?featured=&product_id=4&user_token=' . $banners_handler->getUserToken() . $utm_marks;
 
         $this->template_data = array(
             'button' => '<input type="button" class="button button-primary" value="'

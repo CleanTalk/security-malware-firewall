@@ -101,7 +101,7 @@ class Settings
 
         if ($spbc->data['license_trial'] == 1 && ! empty($spbc->user_token) && ! $spbc->data["wl_mode_enabled"] ) {
             $utm_marks = '&utm_source=wp-backend&utm_medium=cpc&utm_campaign=WP%%20backend%%20trial_security';
-            $link = 'https://p.cleantalk.org/?account=undefined&currency=USD&domains=&extra=true&featured=&fua=true&period=Year&period_interval=3&product_id=4&renew=true&tariff_id=191&user_token=' . $spbc->user_token . $utm_marks;
+            $link = 'https://p.cleantalk.org/?featured=&product_id=4&user_token=' . $spbc->user_token . $utm_marks;
 
             $url = $spbc->data["wl_mode_enabled"]
                 ? $spbc->data["wl_support_url"]
