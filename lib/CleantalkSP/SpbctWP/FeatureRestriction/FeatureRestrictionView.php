@@ -45,7 +45,7 @@ class FeatureRestrictionView
         $renew_text = __('Renew your license, unlock all Security features and join to 20k+ WordPress users who trust CleanTalk!', 'security-malware-firewall');
         $button_text = __('Renew Security license', 'security-malware-firewall');
         $utm_marks = '&utm_source=wp-backend&utm_medium=cpc&utm_campaign=WP%%20backend%%20trial_security';
-        $renew_link = 'https://p.cleantalk.org/?account=undefined&currency=USD&domains=&extra=true&featured=&fua=true&period=Year&period_interval=3&product_id=4&renew=true&tariff_id=191&user_token=' . $spbc->user_token . $utm_marks;
+        $renew_link = 'https://p.cleantalk.org/?featured=&product_id=4&user_token=' . $spbc->user_token . $utm_marks;
         $features_list_template = '<ul style="
                     list-style: none;
                     display: flex;
