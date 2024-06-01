@@ -24,8 +24,8 @@ function spbc_admin__admin_bar__add_structure($wp_admin_bar)
         'meta'  => array('class' => 'cleantalk-admin_bar--list_wrapper'),
     ));
 
-    $utm_marks = '&utm_source=wp-backend&utm_medium=cpc&utm_campaign=WP%%20backend%%20trial_security&cp_mode=security';
-    $link = 'https://p.cleantalk.org/?account=undefined&currency=USD&domains=&extra=true&featured=&fua=true&period=Year&period_interval=3&product_id=4&renew=true&tariff_id=191&user_token=' . $spbc->user_token . $utm_marks;
+    $utm_marks = '&utm_source=wp-backend&utm_medium=cpc&utm_campaign=WP%%20backend%%20trial_security';
+    $link = 'https://p.cleantalk.org/?featured=&product_id=4&user_token=' . $spbc->user_token . $utm_marks;
     $title_link = $spbc->data["wl_mode_enabled"] ? $spbc->data["wl_support_url"] :
         "<span><a href='{$link}' target='_blank'>";
 
