@@ -66,6 +66,7 @@ class BFP extends FirewallModule
                             'status' => 'DENY_BY_BFP',
                         )
                     );
+                    FirewallState::setIsNeedToIncrementEntire(false);
                 }
             }
         }
@@ -87,6 +88,10 @@ class BFP extends FirewallModule
     public function updateLogs()
     {
         if (self::$is_checked) {
+            return;
+        }
+
+        if ( ! FirewallState::$is_need_to_increment_entire ) {
             return;
         }
 
@@ -122,7 +127,7 @@ class BFP extends FirewallModule
                 $query =
                     'INSERT INTO `' . SPBC_TBL_BFP_BLOCKED . '`
 					SET
-						id = \'' . md5($current_ip . 'bfp') . '\',
+						id = \'' . $id . '\',
 						ip = \'' . $current_ip . '\',
 						md5_ip = \'' . $md5_ip . '\',
 						start_time_of_blocking = ' . time() . '
@@ -136,6 +141,7 @@ class BFP extends FirewallModule
         }
 
         self::$is_checked = true;
+        FirewallState::setIsNeedToIncrementEntire(false);
     }
 
     private function clearTable()
