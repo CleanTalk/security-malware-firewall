@@ -4,7 +4,7 @@ Tags: security, firewall, malware, wordpress security, brute force
 Requires at least: 3.0
 Tested up to: 6.5
 Requires PHP: 5.6
-Stable tag: 2.134.2
+Stable tag: 2.134.3
 License: GPLv2
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -336,6 +336,9 @@ This is required for the Security FireWall to function properly. Plugins that ar
 31. **File System Watcher tab**. File System Watcher interface.
 
 == Changelog ==
+
+= 2.134.3 June 06 2024
+* Upd. FSWatcher. FIle system watcher functionality improved.
 
 = 2.134.2 June 01 2024
 * Fix. Admin panel. Banners. Renewal links fixed.
