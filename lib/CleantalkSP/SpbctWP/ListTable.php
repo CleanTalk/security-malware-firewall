@@ -100,6 +100,7 @@ class ListTable
 
         $this->sql['offset'] = isset($this->pagination['page']) ? ($this->pagination['page'] - 1) * $this->pagination['per_page'] : $this->sql['offset'];
         $this->sql['limit']  = isset($this->pagination['per_page']) ? $this->pagination['per_page'] : $this->sql['limit'];
+        $this->sql['limit']  = ! empty($args['sql']['limit_force']) ? $args['sql']['limit_force'] : $this->sql['limit'];
 
         $this->func_data_prepare = ! empty($args['func_data_prepare']) ? $args['func_data_prepare'] : $this->func_data_prepare;
         $this->func_data_get     = ! empty($args['func_data_get']) ? $args['func_data_get'] : $this->func_data_get;
