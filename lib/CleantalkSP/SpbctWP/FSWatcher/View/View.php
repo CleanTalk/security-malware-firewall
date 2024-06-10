@@ -4,6 +4,7 @@ namespace CleantalkSP\SpbctWP\FSWatcher\View;
 
 use CleantalkSP\SpbctWP\FSWatcher\SpbctWpFSWController;
 use CleantalkSP\Common\FSWatcher\View\Phrases;
+use CleantalkSP\SpbctWP\FSWatcher\SpbctWpFSWService;
 
 class View extends \CleantalkSP\Common\FSWatcher\View\View
 {
@@ -64,8 +65,7 @@ class View extends \CleantalkSP\Common\FSWatcher\View\View
         $html .= '</div>';
 
         $html .= '<script type="text/javascript">';
-        $path = __DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'SpbctWpFSWService.php';
-        $html .= 'var fswatcherToken = "' . md5((string)filemtime($path)) . '";';
+        $html .= 'var fswatcherToken = "' . SpbctWpFSWService::generateFsWatcherToken() . '";';
         $html .= 'var fswatcherWebsiteUrl = "' . get_home_url() . '";';
         $html .= file_get_contents(\CleantalkSP\Common\FSWatcher\Storage\FileStorage::getAssetsPath());
         $html .= 'var fswatcherTranslations = ' . json_encode($phrases->getTranslations()) . ';';

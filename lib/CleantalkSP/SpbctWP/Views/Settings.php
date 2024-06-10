@@ -48,15 +48,26 @@ class Settings
             'nextScanLaunchTime' => spbc_get_next_scan_launch_time_text(),
 
             // right corner section
-            'supportLink' => self::supportLink(),
-            'supportOf' => __('Tech support of ' . $spbc->data["wl_brandname"], 'cleantalk'),
-            'homepage' => self::homepage(),
-            'gdprCompliance' => self::gdprCompliance(),
-            'gdprDialog' => '<div id="gdpr_dialog" class="spbc_hide" style="padding: 0 15px;">' . spbc_show_GDPR_text() . '</div>',
+            'supportLink' => self::getSupportLink(),
+            'homepage' => self::generatePreNamedHref(
+                $spbc->data["wl_url"],
+                __('Plugin Homepage', 'security-malware-firewall')
+            ),
+            'gdprComplianceLink' => self::getGDPRComplianceEventLink(),
+            'gdprModalWindow' => self::getGDPRModalWindow(),
             'twoFactorAuth' => self::get2FADialog(),
-            'trademark' => $spbc->data["wl_brandname"] . __(' is a registered trademark. All rights reserved.', 'cleantalk'),
-            'feedback' => self::feedback(),
+            //todo We should not use the brand name to tell this is registered trademark. We are not sure.
+            'trademark' => $spbc->data["wl_brandname"] . __(' is a registered trademark. All rights reserved.', 'security-malware-firewall'),
+            'feedback' => self::getFeedbackRequest(),
             'premium' => self::getPremiumLink(),
+            'malwareCleaning' => self::generatePreNamedHref(
+                'https://l.cleantalk.org/website-malware-removal',
+                __('Malware cleaning', 'security-malware-firewall')
+            ),
+            'websiteSecurityAudit' => self::generatePreNamedHref(
+                'https://l.cleantalk.org/website-security-audit',
+                __('Website security audit', 'security-malware-firewall')
+            ),
 
             // buttons
             'goToCleanTalkLink' => esc_html(self::goToCleantalkLink()),
@@ -107,15 +118,43 @@ class Settings
                 ? $spbc->data["wl_support_url"]
                 : $link;
 
-            $link = __('Make it right!', 'cleantalk')
+            $link = __('Make it right!', 'security-malware-firewall')
             . sprintf(
-                __(' %sGet premium%s', 'cleantalk'),
+                __(' %sGet premium%s', 'security-malware-firewall'),
                 '<a href="' . $url . '" target="_blank">',
                 '</a>'
             );
         }
 
         return $link;
+    }
+
+    private static function getSupportLink()
+    {
+        global $spbc;
+
+        $support_link = '<a target="_blank" href="https://wordpress.org/support/plugin/security-malware-firewall/">wordpress.org</a>.';
+        if ($spbc->data["wl_mode_enabled"]) {
+            $support_link = '<a target="_blank" href="' . $spbc->data["wl_support_url"] . '">' . $spbc->data["wl_brandname"] . '</a>.';
+        }
+
+        $html = '<span>%s&nbsp%s</span>';
+        $html = sprintf(
+            $html,
+            __('Tech support of ' . $spbc->data["wl_brandname"], 'security-malware-firewall'),
+            $support_link
+        );
+        return $html;
+    }
+
+    private static function generatePreNamedHref($url, $name_before_href)
+    {
+        return sprintf(
+            '<span>%s&nbsp<a href="%s" target="_blank">%s</a></span>',
+            $name_before_href,
+            $url,
+            $url
+        );
     }
 
     private static function earlyOutput()
@@ -131,26 +170,14 @@ class Settings
         echo '<div id="spbct-page--react" data-data=\'' . json_encode($spbct_page_data) . '\'></div>';
     }
 
-    private static function supportLink()
-    {
-        global $spbc;
-
-        $support_link = '<a target="_blank" href="https://wordpress.org/support/plugin/security-malware-firewall/">wordpress.org</a>.';
-        if ($spbc->data["wl_mode_enabled"]) {
-            $support_link = '<a target="_blank" href="' . $spbc->data["wl_support_url"] . '">' . $spbc->data["wl_brandname"] . '</a>.';
-        }
-
-        return $support_link;
-    }
-
-    private static function feedback()
+    private static function getFeedbackRequest()
     {
         global $spbc;
 
         $feedback_link = '';
         if (!$spbc->data["wl_mode_enabled"]) {
             $feedback_link = sprintf(
-                __('Do you like CleanTalk? %sPost your feedback here%s%s.', 'cleantalk'),
+                __('Do you like CleanTalk? %sPost your feedback here%s%s.', 'security-malware-firewall'),
                 '<a href="https://wordpress.org/support/plugin/security-malware-firewall/reviews/#new-post" target="_blank">',
                 '<i class="spbc-icon-link-ext"></i>',
                 '</a>'
@@ -160,20 +187,16 @@ class Settings
         return $feedback_link;
     }
 
-    private static function homepage()
+    private static function getGDPRComplianceEventLink()
     {
-        global $spbc;
-
-        return __('Plugin Homepage at', 'cleantalk')
-            . ' <a href="' . $spbc->data["wl_url"]
-            . '" target="_blank">' . $spbc->data["wl_url"] . '</a>.<br/>';
+        return '<span>' . __('Open', 'security-malware-firewall') . '&nbsp</span><span id="spbc_gdpr_open_modal" style="text-decoration: underline;">'
+            . __('GDPR compliance', 'security-malware-firewall')
+            . '</span>';
     }
 
-    private static function gdprCompliance()
+    private static function getGDPRModalWindow()
     {
-        return '<span id="spbc_gdpr_open_modal" style="text-decoration: underline;">'
-            . __('GDPR compliance', 'cleantalk')
-            . '</span><br/>';
+        return '<div id="gdpr_dialog" class="spbc_hide" style="padding: 0 15px;">' . spbc_show_GDPR_text() . '</div>';
     }
 
     private static function get2FADialog()
@@ -190,7 +213,7 @@ class Settings
                 esc_html__('Check %s inbox for the confirmation code.', 'cleantalk'),
                 $email
             ) . '</p>'
-            . '<i>' . esc_html__('The code is valid for 10 minutes. If you want to change the status in this period, the new code won\'t be sent, please, use the code you\'ve already received.', 'cleantalk') . '</i><br><br>'
+            . '<i>' . esc_html__('The code is valid for 10 minutes. If you want to change the status in this period, the new code won\'t be sent, please, use the code you\'ve already received.', 'security-malware-firewall') . '</i><br><br>'
             . '<input name="spbct-confirmation-code" type="text" />'
             . '&nbsp;&nbsp;<button type="button" id="confirmation-code--resend" class="button button-primary">Resend</button>'
             . '</div>';

@@ -5,6 +5,7 @@ namespace CleantalkSP\SpbctWP;
 use CleantalkSP\Variables\Server;
 use CleantalkSP\SpbctWP\Helpers\Helper;
 use CleantalkSP\Security\Firewall\Result;
+use CleantalkSP\SpbctWP\Firewall\FirewallState;
 
 /**
  * CleanTalk SpamFireWall base class.
@@ -42,6 +43,10 @@ class Firewall extends \CleantalkSP\Security\Firewall
      */
     public function updateLog(Result $fw_result)
     {
+        if (FirewallState::$is_admin) {
+            return;
+        }
+
         // Increasing counter
         Counters\FirewallCounter::increment(stripos($fw_result->status, 'pass') !== false ? 'pass' : 'deny');
 
