@@ -514,7 +514,7 @@ class ListTable
             }
 
             if ( isset($action['type']) && $action['type'] == 'link' ) {
-                $href   = ! empty($action['local']) && isset($action['href']) && ! empty($action['href']) ? $home_url . $action['href'] : @$action['href'];
+                $href   = ! empty($action['local']) && isset($action['href']) && ! empty($action['href']) ? $home_url . $action['href'] : '';
                 $href   .= ! empty($action['uid']) ? $uid : '';
                 $href   .= ! empty($action['edit_post_link']) ? preg_match(
                     '/=(\d+)$/',
