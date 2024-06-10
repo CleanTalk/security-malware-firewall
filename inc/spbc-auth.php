@@ -10,7 +10,7 @@ use CleantalkSP\Variables\Server;
 add_filter('authenticate', 'spbc_authenticate', 20, 3); // Hooks for authentificate
 add_action('login_errors', 'spbc_fix_error_messages', 99999); // Filters error message
 add_action('wp_logout', 'spbc_wp_logout', 1);     // Hooks for authentificate
-add_action('login_header', 'spbc_login_form_notification', 1);
+add_action('login_footer', 'spbc_login_form_notification', 1);
 
 if ( isset($spbc) && ($spbc instanceof \CleantalkSP\SpbctWP\State ) && $spbc->settings['2fa__enable'] ) {
     add_action('login_form_login', 'spbc_2fa__authenticate', 1);     // Authenticate with Code
@@ -63,7 +63,7 @@ function spbc_login_form_notification()
             // @ToDo this section need to be refactored
             $link = ! $spbc->data["wl_mode_enabled"] ? $link : $spbc->data["wl_brandname"];
             $logo_img = $spbc->data["wl_mode_enabled"] ? "" : "<img style='vertical-align: bottom; width: 12px; height: 15px;' src='" . SPBC_PATH . "/images/logo_small.png'>";
-            echo "<div style='position: absolute; bottom: 20px; right: 20px;'>"
+            echo "<div style='position: relative; right: 20px;'>"
                  . "<p style='text-align: right;'>"
                  . __('Brute Force Protection by', 'security-malware-firewall')
                  . "&nbsp;"
