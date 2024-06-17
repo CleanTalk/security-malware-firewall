@@ -43,7 +43,6 @@ class Repository
             return array('error' => 'UP_TO_DATE');
         }
 
-        // _v2 since 2.31 version
         $file_url = 'https://cleantalk-security.s3.us-west-2.amazonaws.com/security_signatures/security_signatures_mapped.csv.gz';
         $unparsed_csv = HTTP::getDataFromGZ($file_url);
 
