@@ -13,6 +13,9 @@ add_action('wp_logout', 'spbc_wp_logout', 1);     // Hooks for authentificate
 add_action('login_footer', 'spbc_login_form_notification', 1);
 
 if ( isset($spbc) && ($spbc instanceof \CleantalkSP\SpbctWP\State ) && $spbc->settings['2fa__enable'] ) {
+    if (Server::inUri('wp-login.php') && !empty($_POST)) {
+        add_action('init', 'spbc_2fa_rate_limit', 10, 1);
+    }
     add_action('login_form_login', 'spbc_2fa__authenticate', 1);     // Authenticate with Code
     add_action('login_form', 'spbc_2fa__show_field', 10);
     add_action('after_password_reset', 'spbc_2fa__Google2fa_replace_meta', 10, 1);
@@ -484,6 +487,56 @@ function spbc_2fa__key_remove_old()
     }
 
     $spbc->save('data');
+}
+
+/**
+ * Handle for check if rate limit is passed
+ *
+ * @return bool
+ */
+function spbc_2fa_is_rate_limit_pass()
+{
+    $time = time();
+
+    $rateLimit = get_option('spbc_rate_limit_2fa', [
+        'limit' => 10,
+        'expires_in' => $time + 60,
+        'attempts' => 0,
+    ]);
+
+    if ($rateLimit['expires_in'] <= $time) {
+        $rateLimit['expires_in'] = $time + 60;
+        $rateLimit['attempts'] = 0;
+    }
+
+    if ($rateLimit['expires_in'] > $time) {
+        $rateLimit['attempts']++;
+    }
+
+    if ($rateLimit['attempts'] >= $rateLimit['limit']) {
+        return false;
+    }
+
+    update_option('spbc_rate_limit_2fa', $rateLimit);
+
+    return true;
+}
+
+/**
+ * Check if rate limit is passed
+ */
+function spbc_2fa_rate_limit()
+{
+    if ( isset($_POST['spbc_2fa'], $_POST['log']) ) {
+        $rateLimit = spbc_2fa_is_rate_limit_pass();
+        if (!$rateLimit) {
+            wp_die(
+                __('Rate limit exceeded. Protected - Security by CleanTalk.', 'security-malware-firewall'),
+                'Forbidden',
+                array('response' => 403)
+            );
+        }
+    }
 }
 
 /**
