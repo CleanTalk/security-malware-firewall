@@ -4,6 +4,7 @@ namespace CleantalkSP\Common\FSWatcher\View;
 
 use CleantalkSP\Common\FSWatcher\Controller;
 use CleantalkSP\Common\FSWatcher\Logger;
+use CleantalkSP\Common\FSWatcher\Service;
 
 class View
 {
@@ -59,8 +60,7 @@ class View
         $html .= '</div>';
 
         $html .= '<script type="text/javascript">';
-        $path = __DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'Service.php';
-        $html .= 'var fswatcherToken = "' . md5((string)filemtime($path)) . '";';
+        $html .= 'var fswatcherToken = "' . Service::generateFsWatcherToken() . '";';
         $html .= 'var fswatcherWebsiteUrl = "' . get_home_url() . '";';
         $html .= file_get_contents(__DIR__ . '/../assets/fswatcher-logic.js');
         $html .= '</script>';

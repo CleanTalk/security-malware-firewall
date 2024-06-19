@@ -182,29 +182,18 @@ class DirectoryScan
     {
         $signatures         = Controller::getSignatures();
         $signatures_scanner = new \CleantalkSP\Common\Scanner\SignaturesAnalyser\Controller();
-        $heuristic_scanner = new \CleantalkSP\Common\Scanner\HeuristicAnalyser\Controller();
 
         foreach ( $this->files as $file ) {
             $file_to_check = new \CleantalkSP\Common\Scanner\SignaturesAnalyser\Structures\FileInfo(
                 $file['path'],
                 $file['full_hash']
             );
+
             $sign_result = $signatures_scanner->scanFile($file_to_check, $this->root, $signatures);
 
-            // @ToDo analyse this
-//            if ( $sign_result->status === 'ERROR' ) {
-//                throw new Exception('Signatures scanner. ' . $heur_result->status, 0);
-//            }
-
-            $file_to_check = new FileInfoExtended($file);
-            $heur_result = $heuristic_scanner->scanFile($file_to_check, $this->root);
-
-            // @ToDo $analyse this
-//            if ( $heur_result->status === 'ERROR' ) {
-//                throw new Exception('Heuristic scanner. ' . $heur_result->status, 0);
-//            }
-
-            $result = Controller::mergeResults($sign_result, $heur_result);
+            // @ToDo have to get rid of this unnecessary merge. but it will require a lot of changes.
+            // @ToDo $sign_result is an instance of Verdict, but client code expects an array.
+            $result = Controller::mergeResults($sign_result, []);
             $this->results = array_merge($this->results, $result);
             $this->results['path'] = $file['path'];
         }
