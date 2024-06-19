@@ -45,7 +45,7 @@ class AdminBannersHandler
     public function __construct(State $spbc)
     {
         $this->spbc                 = $spbc;
-        $this->user_token           = $this->spbc->user_token ? '&user_token=' . $this->spbc->user_token : '';
+        $this->user_token           = $this->spbc->user_token ?: '';
         $this->user_id              = get_current_user_id();
         $this->plugin_settings_link = '<a href="'
                                       . (is_network_admin() ? 'settings.php' : 'options-general.php') .

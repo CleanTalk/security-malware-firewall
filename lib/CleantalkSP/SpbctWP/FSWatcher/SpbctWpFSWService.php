@@ -67,22 +67,18 @@ class SpbctWpFSWService extends \CleantalkSP\Common\FSWatcher\Service
         $storage::setAllJournalsAsCompleted();
     }
 
-    /**
-     * Is ajax call is in process
-     *
-     * @return bool
-     */
-    public static function isRC()
-    {
-        if (isset($_POST['fswatcher_token']) && $_POST['fswatcher_token'] == md5((string)filemtime(__FILE__))) {
-            return true;
-        }
-
-        return false;
-    }
-
     public static function attachJS($buffer, $file_to_get_md5 = null)
     {
         return parent::attachJS($buffer, __FILE__);
+    }
+
+    public static function generateFsWatcherToken($salt = '')
+    {
+        return wp_create_nonce('spbc_secret_fs_watcher_token');
+    }
+
+    public static function validateFsWatcherToken()
+    {
+        return isset($_POST['fswatcher_token']) && spbc_check_ajax_referer('spbc_secret_fs_watcher_token', 'fswatcher_token');
     }
 }

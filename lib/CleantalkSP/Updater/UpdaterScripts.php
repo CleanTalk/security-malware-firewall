@@ -1342,4 +1342,11 @@ class UpdaterScripts
         $spbc->save('scan_plugins_info');
         $spbc->save('scan_themes_info');
     }
+
+    public static function updateTo_2_135() //phpcs:ignore PSR1.Methods.CamelCapsMethodName.NotCamelCaps
+    {
+        $sql_change_body_length =
+            'ALTER TABLE ' . SPBC_TBL_SCAN_SIGNATURES . ' MODIFY body text NOT NULL';
+        DB::getInstance()->execute($sql_change_body_length);
+    }
 }

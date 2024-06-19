@@ -23,24 +23,39 @@ function spbc_report_country_part($ips_c, $ip = null)
     return $country_part;
 }
 
-function spbc_report_tc_requests_per($ip = null)
+function spbc_report_tc_requests_per($ip = null, $status = null)
 {
-    global $wpdb;
+    global $wpdb, $spbc;
 
-    if (is_null($ip)) {
+    if (is_null($ip) || is_null($status)) {
         return '-';
+    }
+
+    $log_type = 0;
+    if (strpos($status, 'BFP')) {
+        $log_type = 1;
+    }
+    if (strpos($status, 'WAF')) {
+        $log_type = 2;
     }
 
     $c = $wpdb->get_results(
         'SELECT entries FROM ' . SPBC_TBL_TC_LOG
         . ' WHERE ip = "' . $ip . '"'
+        . ' AND log_type = ' . $log_type
         . ' ORDER BY block_end_on DESC'
         . ' LIMIT 1',
         ARRAY_A
     );
 
     if (isset($c[0]) && isset($c[0]['entries'])) {
-        return (string)$c[0]['entries'];
+        $entries = (int)$c[0]['entries'];
+        // @TODO this condition need to prevent anomalies on Firewall tab in admin panel, refactor it
+        if ($entries > $spbc->settings['traffic_control__autoblock_amount']) {
+            $entries = $spbc->settings['traffic_control__autoblock_amount'];
+        }
+
+        return (string)$entries;
     }
 
     return '-';
@@ -616,7 +631,7 @@ function spbc_update_brief_data_last_actions($current_last_actions)
             $last_actions_already_gained_ids[] = $value['id'];
             // reformat already gained actions
             $action = spbc_parse_action_from_admin_page_uri($value['action_url']);
-            $value['parsed_action'] = $action['parsed_action'];
+            $value['action_event'] = $action['action_event'];
         }
     }
 
@@ -643,7 +658,7 @@ function spbc_update_brief_data_last_actions($current_last_actions)
         foreach ($result as $_action => &$data) {
             // parse url to user-friendly string
             $action = spbc_parse_action_from_admin_page_uri($data['action_url']);
-            $data['parsed_action'] = $action['parsed_action'];
+            $data['action_event'] = $action['action_event'];
             // collect parsed
             $current_last_actions[] = $data;
         }
@@ -779,7 +794,7 @@ function spbc_get_brief_data_for_firewalls($current_fw_data, $current_bfp_data, 
  * Parse URL to find human-readable description.
  * @param string $url - requested URL
  * @param string $post_id - a WordPress post ID, default null
- * @return array ['parsed_action' => '', 'add_time' => bool]
+ * @return array ['action_event' => '', 'add_time' => bool, 'post_id' => null, 'page_action' => null, 'plugin_name' => null]
  */
 function spbc_parse_action_from_admin_page_uri($url, $post_id = null)
 {
@@ -797,20 +812,26 @@ function spbc_parse_action_from_admin_page_uri($url, $post_id = null)
             $plugin_name = explode('/', $parsed_query['plugin'])[0];
         }
     }
-    $out = array('parsed_action' => 'Action of empty URL', 'add_time' => true);
+    $out = array(
+        'action_event' => 'Action of empty URL',
+        'add_time' => true,
+        'post_id' => null,
+        'page_action' => null,
+        'plugin_name' => null,
+    );
     if (!is_null($url)) {
         switch ($url) {
             case ('/wp-admin/edit.php' == $url
                 || '/wp-admin/network/edit.php' == $url
                 ? true
                 : false):
-                $out['parsed_action'] = __('Viewing the posts list', 'security-malware-firewall');
+                $out['action_event'] = 'viewing_posts_list';
                 break;
             case ('/wp-admin/edit.php?post_type=page' == $url
                 || '/wp-admin/network/edit.php?post_type=page' == $url
                 ? true
                 : false):
-                $out['parsed_action'] = __('Viewing the pages list', 'security-malware-firewall');
+                $out['action_event'] = 'viewing_pages_list';
                 break;
             case (preg_match('#/wp-admin/post.php\?post=[\d\w]+&action=edit#', $url)
                 || preg_match('#/wp-admin/network/post.php\?post=[\d\w]+&action=edit#', $url)
@@ -837,60 +858,56 @@ function spbc_parse_action_from_admin_page_uri($url, $post_id = null)
                     $page_action = ': ' . __('draft update', 'security-malware-firewall');
                 }
                 if ( is_int($post_id) ) {
-                    $out['parsed_action'] = sprintf(
-                        __('Editing post %s', 'security-malware-firewall'),
-                        '"' . get_the_title($post_id) . '"' . $page_action
-                    );
+                    $out['action_event'] = 'editing_post_id';
+                    $out['post_id'] = $post_id;
+                    $out['page_action'] = $page_action;
                 } else {
-                    $out['parsed_action'] = __('Editing a post', 'security-malware-firewall');
+                    $out['action_event'] = 'editing_post';
                 }
                 break;
             case (preg_match('#/wp-admin/plugins.php\?.*action=activate#', $url)
                 || preg_match('#/wp-admin/network/plugins.php\?.*action=activate#', $url)
                 ? true
                 : false):
-                $out['parsed_action'] = sprintf(
-                    __('Activate plugin %s', 'security-malware-firewall'),
-                    '"' . $plugin_name . '"'
-                );
+                $out['action_event'] = 'activate_plugin_name';
+                $out['plugin_name'] = $plugin_name;
                 $out['add_time'] = false;
                 break;
             case (preg_match('#/wp-admin/plugins.php\?.*action=deactivate#', $url)
                 || preg_match('#/wp-admin/network/plugins.php\?.*action=deactivate#', $url)
                 ? true
                 : false):
-                $out['parsed_action'] = sprintf(
-                    __('Deactivate plugin %s', 'security-malware-firewall'),
-                    '"' . $plugin_name . '"'
-                );
+                $out['action_event'] = 'deactivate_plugin_name';
+                $out['plugin_name'] = $plugin_name;
                 $out['add_time'] = false;
                 break;
             case (preg_match('#/wp-admin/update.php\?.*action=upload-plugin#', $url)
             || preg_match('#/wp-admin/network/update.php\?.*action=upload-plugin#', $url)
                 ? true
                 : false):
-                $out['parsed_action'] = __('Uploading a plugin', 'security-malware-firewall');
+                $out['action_event'] = 'uploading_plugin';
                 $out['add_time'] = false;
                 break;
             case (preg_match('#/wp-admin/users.php\?.*update=add#', $url)
             || preg_match('#/wp-admin/network/users.php\?.*update=add#', $url)
                 ? true
                 : false):
-                $out['parsed_action'] = __('Adding a user', 'security-malware-firewall');
+                $out['action_event'] = 'adding_user';
                 $out['add_time'] = false;
                 break;
             case (preg_match('#/wp-admin/users.php\?.*delete_count#', $url)
             || preg_match('#/wp-admin/network/users.php\?.*delete_count#', $url)
                 ? true
                 : false):
-                $out['parsed_action'] = __('Deleting user(s)', 'security-malware-firewall');
+                $out['action_event'] = 'deleting_user';
                 $out['add_time'] = false;
                 break;
             default:
                 preg_match_all('/\/wp-admin\/(.+\.php)\?(action=.+?)&/', $url, $matches);
                 $file = !empty($matches[1]) && !empty($matches[1][0]) ? $matches[1][0] : '';
                 $the_action = !empty($matches[2]) && !empty($matches[2][0]) ? $matches[2][0] : '';
-                $out['parsed_action'] = !empty($file) && !empty($the_action) ? $file . '...' . $the_action : 'Admin action';
+                $out['action_event'] = !empty($file) && !empty($the_action) ? $file . '...' . $the_action : 'view';
+                $out['add_time'] = false;
         }
     }
     return $out;
