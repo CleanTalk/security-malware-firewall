@@ -53,12 +53,6 @@ class TC extends FirewallModule
     protected $is_logged_in = false;
 
     /**
-     * Is user is an admin
-     * @var false|mixed
-     */
-    protected $user_is_admin;
-
-    /**
      * Is request is skipped by role rules
      * @var bool
      */
@@ -91,7 +85,7 @@ class TC extends FirewallModule
 
         parent::__construct($params);
 
-        $this->user_is_admin = $params['user_is_admin'] ?: false;
+        $this->checkIsAdmin();
     }
 
     /**
@@ -104,7 +98,7 @@ class TC extends FirewallModule
 
         $results = array();
 
-        if ( $this->user_is_admin ) {
+        if ( FirewallState::$is_admin ) {
             // Role skipping rule. Do not check admins
             $this->tc_skipped_by_role = true;
 
@@ -148,7 +142,8 @@ class TC extends FirewallModule
     {
         $rand   = rand(1, 100000);
         $md5_ip = md5($ip);
-        $sql    = "SELECT entries, block_end_on, seek_end_on FROM " . $this->log_table . " WHERE md5_ip = '$md5_ip' AND $rand;";
+        $sql    = "SELECT entries, block_end_on, seek_end_on FROM " . $this->log_table
+            . " WHERE md5_ip = '$md5_ip' AND log_type = 0 AND $rand;";
         $result = $this->db->fetch($sql);
 
         // Start hits dispatching
@@ -216,6 +211,10 @@ class TC extends FirewallModule
      */
     public function updateLog()
     {
+        if ( ! FirewallState::$is_need_to_increment_entire ) {
+            return;
+        }
+
         foreach ( $this->ip_array as $current_ip ) {
             $entries      = isset($this->entries_to_write[$current_ip]) ? $this->entries_to_write[$current_ip] : 0;
             $seek_end_on  = isset($this->seek_end_on[$current_ip]) ? $this->seek_end_on[$current_ip] : 'NULL';
@@ -284,5 +283,18 @@ class TC extends FirewallModule
         $this->entries_to_write[$ip] = $entries + 1;
         $this->seek_end_on[$ip]      = 'NULL';
         $this->block_end_on[$ip]     = time() + $this->block_period;
+    }
+
+    private function checkIsAdmin()
+    {
+        if ( !function_exists('wp_get_current_user') ) {
+            include(ABSPATH . "wp-includes/pluggable.php");
+        }
+
+        $current_user = wp_get_current_user();
+
+        if (in_array('administrator', $current_user->roles)) {
+            FirewallState::setIsAdmin(true);
+        }
     }
 }

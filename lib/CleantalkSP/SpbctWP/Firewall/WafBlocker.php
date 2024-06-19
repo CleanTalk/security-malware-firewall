@@ -61,6 +61,10 @@ class WafBlocker extends FirewallModule
             return;
         }
 
+        if ( ! FirewallState::$is_need_to_increment_entire ) {
+            return;
+        }
+
         foreach ( $this->ip_array as $current_ip ) {
             $id = md5($current_ip . 'WafBlocker');
             $md5_ip = md5($current_ip);
@@ -88,6 +92,7 @@ class WafBlocker extends FirewallModule
         }
 
         $this->is_checked = true;
+        FirewallState::setIsNeedToIncrementEntire(false);
     }
 
     public function clearTable()

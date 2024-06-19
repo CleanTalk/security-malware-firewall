@@ -92,11 +92,7 @@ class Service
      */
     public static function isRC()
     {
-        if (isset($_POST['fswatcher_token']) && $_POST['fswatcher_token'] == md5((string)filemtime(__FILE__))) {
-            return true;
-        }
-
-        return false;
+        return static::validateFsWatcherToken();
     }
 
     /**
@@ -162,5 +158,23 @@ class Service
     {
         $storage = Controller::$storage;
         return $storage::getProcessingJournal();
+    }
+
+    /**
+     * Generates token (aka nonce).
+     * The $salt must be used obligatorily
+     *
+     * @param $salt
+     *
+     * @return string
+     */
+    public static function generateFsWatcherToken($salt = '')
+    {
+        return md5(filemtime(__FILE__) . $salt);
+    }
+
+    public static function validateFsWatcherToken()
+    {
+        return isset($_POST['fswatcher_token']) && $_POST['fswatcher_token'] === static::generateFsWatcherToken();
     }
 }
