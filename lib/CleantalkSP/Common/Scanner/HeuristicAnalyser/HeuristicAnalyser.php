@@ -288,8 +288,7 @@ class HeuristicAnalyser
         // Do this, only for initial code
         if ( ! $this->evaluations->evaluations ) {
             if ( $this->extension !== 'html' && $this->extension !== 'js' ) {
-                //todo turn this back after task finished https://doboard.com/1/task/6692
-                //$this->code_style->analyseLineLengths($this->file_content);
+                $this->code_style->analyseLineLengths($this->file_content);
                 $this->code_style->analyseHumanUnreadableCode($this->file_content);
                 $this->code_style->analyseWeightOfNoise($this->file_content);
             }

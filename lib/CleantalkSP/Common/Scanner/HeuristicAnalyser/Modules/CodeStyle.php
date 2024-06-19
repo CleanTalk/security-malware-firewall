@@ -132,7 +132,7 @@ class CodeStyle
         for ( $line_num = 1; isset($lines[$line_num - 1]); $line_num++ ) {
             try {
                 $line = $lines[$line_num - 1];
-                if ($this->analyseLineLengthsIsExceptions($line)) {
+                if ($this->analyseLineLengthsIsExcludedForLine($line)) {
                     continue;
                 }
                 if ( strlen($line) > self::CRITICAL_CODE_STRING_LENGTH ) {
@@ -145,12 +145,13 @@ class CodeStyle
     }
 
     /**
-     * Check exceptions for long line
+     * Check if the line should be skipped.
+     * Uses regexps of known signs to exclude.
      *
      * @param string $line
      * @return bool
      */
-    public function analyseLineLengthsIsExceptions($line)
+    public function analyseLineLengthsIsExcludedForLine($line)
     {
         if (preg_match('#^\s*<path\s+d="[^$][.\w\s-]+"\s*\/>#', $line, $match)) {
             return true;
