@@ -88,8 +88,10 @@ class Firewall extends \CleantalkSP\Security\Firewall
             'country_code'    => $fw_result->country_code,
         );
 
+        $signature_chunk = !empty($fw_result->signature_id) ? (string)$fw_result->signature_id : '';
+
         $log_item['id'] = md5(
-            $fw_result->ip . $log_item['http_user_agent'] . $fw_result->status . $fw_result->waf_action
+            $fw_result->ip . $log_item['http_user_agent'] . $fw_result->status . $fw_result->waf_action . $signature_chunk
         );
 
         $query = "INSERT INTO " . SPBC_TBL_FIREWALL_LOG . " SET
