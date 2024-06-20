@@ -287,13 +287,7 @@ class TC extends FirewallModule
 
     private function checkIsAdmin()
     {
-        if ( !function_exists('wp_get_current_user') ) {
-            include(ABSPATH . "wp-includes/pluggable.php");
-        }
-
-        $current_user = wp_get_current_user();
-
-        if (in_array('administrator', $current_user->roles)) {
+        if (spbc_user_is_admin()) {
             FirewallState::setIsAdmin(true);
         }
     }
