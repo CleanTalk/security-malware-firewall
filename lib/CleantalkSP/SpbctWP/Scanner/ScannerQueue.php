@@ -31,6 +31,7 @@ use CleantalkSP\SpbctWP\Helpers\HTTP;
 use CleantalkSP\SpbctWP\Helpers\Helper as QueueHelper;
 use CleantalkSP\SpbctWP\Helpers\CSV;
 use CleantalkSP\SpbctWP\RemoteCalls;
+use CleantalkSP\SpbctWP\Scanner\Stages\SendResultsStage;
 
 class ScannerQueue
 {
@@ -75,12 +76,6 @@ class ScannerQueue
      * @var string Current scan stage
      */
     private $stage;
-
-    /**
-     * @var bool Shows if this is an end of scan
-     * @psalm-suppress UnusedProperty
-     */
-    private $end_of_scan = false;
 
     /**
      * @var DB
@@ -798,43 +793,6 @@ class ScannerQueue
                 'error'   => __FUNCTION__ . ' query error',
                 'comment' => substr($this->db->getLastError(), 0, 1000),
             );
-    }
-
-    /**
-     * @param string $path_to_scan
-     *
-     * @return array
-     * @global State $spbc
-     *
-     */
-    public function countFileSystem($path_to_scan = ABSPATH)
-    {
-        ini_set('max_execution_time', '120');
-
-        global $spbc;
-
-        $path_to_scan = realpath($path_to_scan);
-        $init_params  = array(
-            'count'           => true,
-            'file_exceptions' => 'wp-config.php',
-            'extensions'      => 'php, html, htm, js, php2, php3, php4, php5, php6, php7, phtml, shtml, phar, odf, [ot.]',
-            'files_mandatory' => array(),
-            'dir_exceptions'  => array(SPBC_PLUGIN_DIR . 'quarantine')
-        );
-
-        if ( ! empty($spbc->settings['scanner__dir_exclusions']) ) {
-            $init_params['dir_exceptions'] = array_merge(
-                $init_params['dir_exceptions'],
-                spbc__get_exists_directories(explode("\n", $spbc->settings['scanner__dir_exclusions']))
-            );
-        }
-
-        $scanner = new Surface($path_to_scan, $this->root, $init_params);
-
-        return array(
-            'total' => $scanner->files_count,
-            'end'   => 1,
-        );
     }
 
     /**
@@ -2131,241 +2089,13 @@ class ScannerQueue
     }
 
     /**
-     * @psalm-suppress UnusedVariable
-     * @psalm-suppress RedundantCondition
+     * Send results stage
      */
     public function send_results() // phpcs:ignore PSR1.Methods.CamelCapsMethodName.NotCamelCaps
     {
-        global $spbc, $wpdb;
+        $results = new SendResultsStage();
 
-        // Getting modified files
-        $sql_result__critical = $this->db->fetchAll(
-            'SELECT full_hash, mtime, size, source_type, source, source_status, path, status, severity'
-            . ' FROM ' . SPBC_TBL_SCAN_FILES
-            . ' WHERE'
-            . ' severity = "CRITICAL" AND'
-            . ' status <> "QUARANTINED" AND'
-            . ' status <> "APPROVED_BY_USER" AND'
-            . ' status <> "APPROVED_BY_CLOUD" AND'
-            . ' status <> "APPROVED_BY_CT"'
-        );
-
-        $sql_result__suspicious = $this->db->fetchAll(
-            'SELECT full_hash, mtime, size, source_type, source, source_status, path, status, severity'
-            . ' FROM ' . SPBC_TBL_SCAN_FILES
-            . ' WHERE'
-            . ' severity = "SUSPICIOUS" AND'
-            . ' status <> "QUARANTINED" AND'
-            . ' status <> "APPROVED_BY_USER" AND'
-            . ' status <> "APPROVED_BY_CLOUD" AND'
-            . ' status <> "APPROVED_BY_CT"'
-        );
-
-        // Getting modified files
-        $critical_files_found = array();
-        if ( count($sql_result__critical) ) {
-            foreach ( $sql_result__critical as $row ) {
-                $path = $spbc->is_windows ? str_replace('\\', '/', $row['path']) : $row['path'];
-                unset($row['path'], $row['status'], $row['severity']);
-                $row['mtime'] = $row['mtime'] + $spbc->data['site_utc_offset_in_seconds'];
-                $critical_files_found[$path] = array_values($row);
-            }
-        }
-
-        // Getting modified files
-        $suspicious_files_found = array();
-        if ( count($sql_result__suspicious) ) {
-            foreach ( $sql_result__suspicious as $row ) {
-                $path = $spbc->is_windows ? str_replace('\\', '/', $row['path']) : $row['path'];
-                unset($row['path'], $row['status'], $row['severity']);
-                $row['mtime'] = $row['mtime'] + $spbc->data['site_utc_offset_in_seconds'];
-                $suspicious_files_found[$path] = array_values($row);
-            }
-        }
-
-        // Getting unknown files
-        $unknown_files_found = array();
-        if ( $spbc->settings['scanner__list_unknown'] ) {
-            // Getting unknown files (without source)
-            $sql_result__unknown = $this->db->fetchAll(
-                'SELECT full_hash, mtime, size, path, source, severity, detected_at'
-                . ' FROM ' . SPBC_TBL_SCAN_FILES
-                . ' WHERE source IS NULL AND'
-                . ' status <> "APPROVED_BY_USER" AND'
-                . ' status <> "APPROVED_BY_CT" AND'
-                . ' status <> "APPROVED_BY_CLOUD" AND'
-                . ' detected_at >= ' . (time() - $spbc->settings['scanner__list_unknown__older_than'] * 86400) . ' AND'
-                . ' path NOT LIKE "%wp-content%themes%" AND'
-                . ' path NOT LIKE "%wp-content%plugins%" AND'
-                . ' path NOT LIKE "%wp-content%cache%" AND'
-                . ' (severity NOT IN ("CRITICAL","SUSPICIOUS") OR severity IS NULL)'
-            );
-
-            foreach ( $sql_result__unknown as $row ) {
-                $path = $spbc->is_windows ? str_replace('\\', '/', $row['path']) : $row['path'];
-                unset($row['path'], $row['severity'], $row['source'], $row['detected_at ']);
-                $row['mtime'] = $row['mtime'] + $spbc->data['site_utc_offset_in_seconds'];
-                $unknown_files_found[$path] = array_values($row);
-            }
-        }
-
-        $error = '';
-
-        /**
-         * Getting parameters for security_mscan_logs()
-         */
-        $key                  = $spbc->settings['spbc_key'];
-        $list_unknown         = (int)$spbc->settings['scanner__list_unknown'];
-        $service_id           = $spbc->service_id;
-        $scanner_start_local_date = isset($spbc->data['scanner']['scanner_start_local_date'])
-            ? $spbc->data['scanner']['scanner_start_local_date']
-            : current_time('Y-m-d H:i:s');
-        $scan_result          = !empty($critical_files_found) || !empty($suspicious_files_found) ? 'warning' : 'passed';
-        $total_site_files     = $spbc->data['scanner']['files_total'] = $this->countFileSystem()['total'];
-        $scan_type            = RemoteCalls::check() ? 'auto' : 'manual';
-        $checksums_count_ct   = isset($spbc->data['scanner']['checksums_count_ct']) ? $spbc->data['scanner']['checksums_count_ct'] : null;
-        $checksums_count_user = (int)$wpdb->get_var(
-            'SELECT COUNT(*) from ' . SPBC_TBL_SCAN_FILES . ' WHERE status = "APPROVED_BY_USER"'
-        );
-        $signatures_count     = isset($spbc->data['scanner']['signature_count']) ? $spbc->data['scanner']['signature_count'] : null;
-        $scanned_total        = isset($spbc->data['scanner']['scanned_total']) ? $spbc->data['scanner']['scanned_total'] : null;
-        $total_site_pages     = isset($spbc->data['scanner']['total_site_pages']) ? $spbc->data['scanner']['total_site_pages'] : 0;
-        $scanned_site_pages   = isset($spbc->data['scanner']['scanned_site_pages']) ? $spbc->data['scanner']['scanned_site_pages'] : 0;
-        $total_core_files = (int)$wpdb->get_var(
-            'SELECT COUNT(*) FROM ' . SPBC_TBL_SCAN_FILES . ' WHERE source_type = "CORE" AND source = "wordpress"'
-        );
-        $total_core_files = $total_core_files ?: 0;
-        $signatures_found = isset($spbc->data['scanner']['signatures_found']) ? $spbc->data['scanner']['signatures_found'] : [];
-        $signatures_found = json_encode($signatures_found);
-
-        if ( is_null($signatures_count) && is_string($signatures_found) ) {
-            $signatures_count = count(json_decode($signatures_found, true));
-        }
-
-        // API. Sending files scan result
-        $result = API::method__security_mscan_logs(
-            $key,
-            $list_unknown,
-            $service_id,
-            $scanner_start_local_date,
-            $scan_result,
-            $total_core_files,
-            $total_site_files,
-            $critical_files_found,
-            $suspicious_files_found,
-            $unknown_files_found,
-            $scan_type,
-            $checksums_count_ct,
-            $checksums_count_user,
-            $signatures_count,
-            $scanned_total,
-            $total_site_pages,
-            $scanned_site_pages,
-            $signatures_found
-        );
-
-        if ( ! empty($result['error']) ) {
-            $error = 'Common result send: ' . $result['error'];
-        } else {
-            $spbc->data['scanner']['last_sent']        = current_time('timestamp');
-            $spbc->data['scanner']['last_scan']        = current_time('timestamp');
-            $spbc->data['scanner']['scan_finish_timestamp'] = time();
-            $spbc->data['scanner']['last_scan_amount'] = Request::get('total_scanned') ?: $scanned_total;
-            $spbc->data['scanner']['signatures_found'] = []; // Clearing ids of the signatures found
-        }
-
-        // Sending links scan result
-        if ( $spbc->settings['scanner__outbound_links'] ) {
-            $links         = $this->db->fetchAll(
-                'SELECT `link`, `link_text`, `page_url`'
-                . ' FROM ' . SPBC_TBL_SCAN_LINKS
-                . ' WHERE scan_id = (SELECT MAX(scan_id) FROM ' . SPBC_TBL_SCAN_LINKS . ');',
-                OBJECT
-            );
-            $links_to_send = array();
-            foreach ( $links as $link ) {
-                $links_to_send[$link->link] = array(
-                    'link_text'   => $link->link_text,
-                    'page_url'    => $link->page_url,
-                );
-            }
-            $links_count   = sizeof($links_to_send);
-            $links_to_send = json_encode($links_to_send);
-
-            $result_links = API::method__security_linksscan_logs(
-                $spbc->settings['spbc_key'],
-                $scanner_start_local_date,
-                $links_count ? 'failed' : 'passed',
-                $links_count,
-                $links_to_send
-            );
-            if ( ! empty($result_links['error']) ) {
-                $error .= ' Links result send: ' . $result_links['error'];
-            } else {
-                $spbc->data['scanner']['last_scan_links_amount'] = $links_count;
-            }
-        }
-
-        // Sending info about backup
-        if ( $spbc->settings['scanner__auto_cure'] && ! empty($spbc->data['scanner']['cured']) ) {
-            //todo This stuff should be refactored on cloud to use CureLog instance, at the moment this does not send failed files
-            $result_repairs = API::method__security_mscan_repairs(
-                $spbc->settings['spbc_key'],            // API key
-                'SUCCESS',                    // Repair result
-                'ALL_DONE',                // Repair comment
-                (array)$spbc->data['scanner']['cured'], // Files
-                count($spbc->data['scanner']['cured']), // Links found for last scan
-                $spbc->data['scanner']['last_backup'],  // Last backup num
-                $scanner_start_local_date               // Scanner start local date
-            );
-            if ( ! empty($result_repairs['error']) ) {
-                $error .= ' Repairs result send: ' . $result_repairs['error'];
-            }
-        }
-
-        // Frontend analysis
-        if ( isset($spbc->settings['scanner__frontend_analysis']) && $spbc->settings['scanner__frontend_analysis'] ) {
-            try {
-                Frontend::sendFmsLogs();
-            } catch (\Exception $exception) {
-                $error .= $exception->getMessage();
-            }
-        }
-
-        $spbc->error_toggle((bool)$error, 'scanner_result_send', $error);
-
-        if ( $spbc->settings['scanner__auto_start'] && empty($spbc->errors['configuration']) ) {
-            $scanner_launch_data = spbc_get_custom_scanner_launch_data();
-            Cron::updateTask(
-                'scanner__launch',
-                'spbc_scanner__launch',
-                $scanner_launch_data['period'],
-                $scanner_launch_data['start_time']
-            );
-        }
-
-        $spbc->save('data');
-
-        // Adding to log
-        $duration_of_scanning = isset($spbc->data['scanner']['scan_start_timestamp'], $spbc->data['scanner']['scan_finish_timestamp'])
-            ? '<b>' . sprintf(__('Scan duration %s seconds.', 'security-malware-firewall') . '</b>', $spbc->data['scanner']['scan_finish_timestamp'] - $spbc->data['scanner']['scan_start_timestamp'])
-            : __('The duration of the scan is not known', 'security-malware-firewall');
-        ScanningLogFacade::writeToLog($duration_of_scanning);
-
-        $out = array(
-            'end' => 1,
-            'stage_data_for_logging' => array(
-                'title' => $duration_of_scanning,
-                'description' => ''
-            )
-        );
-        if ( (bool)$error ) {
-            $out['error'] = $error;
-        }
-
-        $this->end_of_scan = true;
-
-        return $out;
+        return $results->execute();
     }
 
     public function file_monitoring() // phpcs:ignore PSR1.Methods.CamelCapsMethodName.NotCamelCaps

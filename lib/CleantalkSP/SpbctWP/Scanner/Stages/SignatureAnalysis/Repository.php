@@ -23,27 +23,31 @@ class Repository
     }
 
     /**
-     * Receive signatures from the cloud
+     * Receive signatures from the cloud.
      *
-     * @param $latest_signature_submitted_time
+     * @param string $latest_signature_local the time of one last updated signature, SQL DATETIME string
      *
      * @return array An array with map and values
      * @psalm-suppress InvalidLiteralArgument
      */
-    public static function getSignaturesFromCloud($latest_signature_submitted_time)
+    public static function getSignaturesFromCloud($latest_signature_local)
     {
         // Check signatures version. File contains time of the signatures latest update.
         $version_file_url = 'https://cleantalk-security.s3.us-west-2.amazonaws.com/security_signatures/version.txt';
-        $latest_signatures = HTTP::getContentFromURL($version_file_url);
-        if ( ! empty($latest_signatures['error']) || ! strtotime($latest_signatures) ) {
+        $latest_signatures_cloud = HTTP::getContentFromURL($version_file_url);
+        if ( ! empty($latest_signatures_cloud['error']) || ! strtotime($latest_signatures_cloud) ) {
             return array('error' => 'WRONG_VERSION_FILE');
         }
 
-        if ( strtotime($latest_signature_submitted_time) >= strtotime($latest_signatures) ) {
+        if ( strtotime($latest_signature_local) >= strtotime($latest_signatures_cloud) ) {
             return array('error' => 'UP_TO_DATE');
         }
 
-        $file_url = 'https://cleantalk-security.s3.us-west-2.amazonaws.com/security_signatures/security_signatures_mapped.csv.gz';
+        $file_url = self::getSignaturesFileURL();
+        if ( !$file_url ) {
+            return array('error' => 'SIGNATURES_FILE_URL_RESPONSE_NOT_200');
+        }
+
         $unparsed_csv = HTTP::getDataFromGZ($file_url);
 
         if ( empty($unparsed_csv['error']) ) {
@@ -70,6 +74,7 @@ class Repository
             return $out;
         }
 
+        //contains error
         return (array) $unparsed_csv;
     }
 
@@ -164,5 +169,36 @@ class Repository
         }
 
         return true;
+    }
+
+    /**
+     * Get signatures file URL. Check which signatures source file version is available.
+     * @return false|string
+     */
+    private static function getSignaturesFileURL()
+    {
+        global $spbc;
+        $file_url = '';
+        //list available urls
+        $file_of_v0 = 'https://cleantalk-security.s3.us-west-2.amazonaws.com/security_signatures/security_signatures_mapped.csv.gz';
+        $file_of_v3 = 'https://cleantalk-security.s3.us-west-2.amazonaws.com/security_signatures/security_signatures_mapped_v3.csv.gz';
+
+        //todo Remove v0 URL and it's check once the task is finished https://doboard.com/1/task/8507
+        //check response and select available URL, v3 first
+        if ( HTTP::getResponseCode($file_of_v3) === 200 ) {
+            //use v3 if available
+            $file_url = $file_of_v3;
+        } elseif (HTTP::getResponseCode($file_of_v0) === 200) {
+            //else, use no version file if available
+            $file_url = $file_of_v0;
+        }
+        if (!empty($file_url)) {
+            //save to data the last URL
+            $spbc->data['scanner']['last_signatures_file_url'] = $file_url;
+            $spbc->save('data');
+            return $file_url;
+        }
+        // if nothing available return false
+        return false;
     }
 }

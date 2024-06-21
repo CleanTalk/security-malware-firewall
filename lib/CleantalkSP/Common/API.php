@@ -4,6 +4,8 @@ namespace CleantalkSP\Common;
 
 use CleantalkSP\Common\HTTP\Request;
 use CleantalkSP\SpbctWP\DTO\MScanFilesDTO;
+use CleantalkSP\SpbctWP\Scanner\Stages\DTO\SendBackupDTO;
+use CleantalkSP\SpbctWP\Scanner\Stages\DTO\SendFilesDTO;
 
 /**
  * CleanTalk API class.
@@ -564,67 +566,50 @@ class API
      * Wrapper for security_mscan_logs API method.
      * Sends result of file scan to the cloud.
      *
-     * @param string $api_key
-     * @param int $list_unknown
-     * @param int $service_id
-     * @param int|string $scan_time Datetime of scan
-     * @param string $scan_result "passed"|"warning"
-     * @param int $scanned_total
-     * @param array $critical_files_found List of modified files with details
-     * @param array $unknown_files_found List of modified files with details
+     * @param SendFilesDTO $dto
      *
      * @return array|bool|mixed
      */
-    public static function method__security_mscan_logs( // phpcs:ignore PSR1.Methods.CamelCapsMethodName.NotCamelCaps
-        $api_key,
-        $list_unknown,
-        $service_id,
-        $scanner_start_local_date,
-        $scan_result,
-        $total_core_files,
-        $total_site_files,
-        $critical_files_found,
-        $suspicious_files_found,
-        $unknown_files_found,
-        $scan_type,
-        $checksums_count_ct,
-        $checksums_count_user,
-        $signatures_count,
-        $scanned_total,
-        $total_site_pages,
-        $scanned_site_pages,
-        $signatures_found
-    ) {
+    public static function method__security_mscan_logs($dto) // phpcs:ignore PSR1.Methods.CamelCapsMethodName.NotCamelCaps
+    {
         $request = array(
             'method_name'          => 'security_mscan_logs',
-            'auth_key'             => $api_key,
-            'list_unknown'         => (int) $list_unknown,
-            'service_id'           => $service_id,
-            'started'              => $scanner_start_local_date,
-            'result'               => $scan_result,
-            'total_core_files'     => $total_core_files,
-            'total_site_files'     => $total_site_files,
-            'scan_type'            => $scan_type,
-            'checksums_count_ct'   => $checksums_count_ct,
-            'checksums_count_user' => $checksums_count_user,
-            'signatures_count'     => $signatures_count,
-            'total_scan_files'     => $scanned_total,
-            'total_site_pages'     => $total_site_pages,
-            'scanned_site_pages'   => $scanned_site_pages,
-            'signatures_found'     => $signatures_found
+            'auth_key'             => $dto->api_key,
+            'list_unknown'         => (int) $dto->list_unknown,
+            'service_id'           => $dto->service_id,
+            'started'              => $dto->scanner_last_start_local_date,
+            'result'               => $dto->scanner_result,
+            'total_core_files'     => $dto->total_core_files,
+            'total_site_files'     => $dto->total_site_files,
+            'scan_type'            => $dto->scan_type,
+            'checksums_count_ct'   => $dto->checksum_count_ct,
+            'checksums_count_user' => $dto->checksum_count_user,
+            'signatures_count'     => $dto->signatures_count,
+            'total_scan_files'     => $dto->total_scan_files,
+            'total_site_pages'     => $dto->total_site_pages,
+            'scanned_site_pages'   => $dto->scanned_site_pages,
+            'signatures_found'     => $dto->signatures_found,
+            'failed_files'         => $dto->failed_files,
+            'failed_files_rows'    => $dto->failed_files_rows,
+            'suspicious_files'     => $dto->suspicious_files,
+            'suspicious_files_rows' => $dto->suspicious_files_rows,
+            'unknown_files'        => $dto->unknown_files,
+            'unknown_files_rows'   => $dto->unknown_files_rows,
         );
 
-        if ( ! empty($critical_files_found)) {
-            $request['failed_files']      = json_encode($critical_files_found);
-            $request['failed_files_rows'] = count($critical_files_found);
+        if ($request['failed_files'] === '') {
+            unset($request['failed_files']);
+            unset($request['failed_files_rows']);
         }
-        if ( ! empty($suspicious_files_found)) {
-            $request['suspicious_files']      = json_encode($suspicious_files_found);
-            $request['suspicious_files_rows'] = count($suspicious_files_found);
+
+        if ($request['suspicious_files'] === '') {
+            unset($request['suspicious_files']);
+            unset($request['suspicious_files_rows']);
         }
-        if ( ! empty($unknown_files_found)) {
-            $request['unknown_files']      = json_encode($unknown_files_found);
-            $request['unknown_files_rows'] = count($unknown_files_found);
+
+        if ($request['unknown_files'] === '') {
+            unset($request['unknown_files']);
+            unset($request['unknown_files_rows']);
         }
 
         return static::sendRequest($request);
@@ -740,34 +725,21 @@ class API
      * Wrapper for get_antispam_report API method.
      * Sends data about auto repairs
      *
-     * @param string $api_key
-     * @param string $repair_result
-     * @param string $repair_comment
-     * @param array $repaired_processed_files
-     * @param int $repaired_total_files_processed
-     * @param int $backup_id
-     * @param int $scanner_start_local_date
+     * @param SendBackupDTO $dto
      *
      * @return array|bool|mixed
      */
-    public static function method__security_mscan_repairs( // phpcs:ignore PSR1.Methods.CamelCapsMethodName.NotCamelCaps
-        $api_key,
-        $repair_result,
-        $repair_comment,
-        $repaired_processed_files,
-        $repaired_total_files_processed,
-        $backup_id,
-        $scanner_start_local_date
-    ) {
+    public static function method__security_mscan_repairs($dto) // phpcs:ignore PSR1.Methods.CamelCapsMethodName.NotCamelCaps
+    {
         $request = array(
             'method_name'                  => 'security_mscan_repairs',
-            'auth_key'                     => $api_key,
-            'repair_result'                => $repair_result,
-            'repair_comment'               => $repair_comment,
-            'repair_processed_files'       => json_encode($repaired_processed_files),
-            'repair_total_files_processed' => $repaired_total_files_processed,
-            'backup_id'                    => $backup_id,
-            'started'                      => $scanner_start_local_date,
+            'auth_key'                     => $dto->api_key,
+            'repair_result'                => $dto->repair_result,
+            'repair_comment'               => $dto->repair_comment,
+            'repair_processed_files'       => json_encode($dto->repaired_processed_files),
+            'repair_total_files_processed' => $dto->repaired_total_files_processed,
+            'backup_id'                    => $dto->backup_id,
+            'started'                      => $dto->scanner_last_start_local_date,
         );
 
         return static::sendRequest($request);

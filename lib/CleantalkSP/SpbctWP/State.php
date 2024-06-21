@@ -74,6 +74,7 @@ class State extends \CleantalkSP\Common\State
         'scanner__dir_exclusions'          => '',
         'scanner__list_unknown'            => 1,
         'scanner__list_unknown__older_than' => 10, // day
+        'scanner__list_approved_by_cleantalk' => 0,
         'scanner__auto_start__set_period'  => 86400,
         'scanner__file_monitoring'  => 0,
         'scanner__fs_watcher'  => 1,
@@ -175,6 +176,7 @@ class State extends \CleantalkSP\Common\State
             'scanner_start_local_date' => null,
             'scanned_total' => 0,
             'signatures_found' => array(),
+            'last_signatures_file_url' => '',
         ),
         'errors' => array(
             'cron' => array(),

@@ -6,11 +6,16 @@ class Logger
 {
     private static $logger_dir = __DIR__ . DIRECTORY_SEPARATOR . 'logs';
 
+    /**
+     * @var string
+     */
+    private static $salt = '';
+
     private static function getCurrentDayLogPath()
     {
         $path = self::getLoggerDir();
         return $path
-            ? $path . DIRECTORY_SEPARATOR . date('Y-m-d') . md5(__FILE__) . '.log'
+            ? $path . DIRECTORY_SEPARATOR . date('Y-m-d') . static::generateLogHash() . '.log'
             : false;
     }
 
@@ -60,5 +65,21 @@ class Logger
         }
 
         error_log($message, 3, $current_day_log_path);
+    }
+
+    protected static function generateLogHash()
+    {
+        return md5(filemtime(__FILE__) . static::$salt);
+    }
+
+    /**
+     * Store the salt value to the class property
+     * The $salt must be used obligatorily
+     *
+     * @param $salt
+     */
+    public static function setSaltValue($salt = '')
+    {
+        static::$salt = (string) $salt;
     }
 }

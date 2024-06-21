@@ -326,6 +326,8 @@ class FW extends FirewallModule
                     'is_personal'      => $value['is_personal'],
                     'hits'             => (int)$value['requests'],
                     'datetime_gmt'     => $value['entry_timestamp'],
+                    //signature_id always persists for WAF rules
+                    'signature_id'     => !empty($value['signature_id']) ? $value['signature_id'] : null,
                 );
 
                 // Legacy
@@ -352,6 +354,9 @@ class FW extends FirewallModule
                     case 'DENY_BY_DOS':
                         $to_data['status_efw'] = -2;
                         break;
+                    /**
+                     * WAF checks
+                     */
                     case 'DENY_BY_WAF_XSS':
                         $to_data['status_efw']  = -3;
                         $to_data['waf_comment'] = $value['pattern'];
@@ -360,17 +365,26 @@ class FW extends FirewallModule
                         $to_data['status_efw']  = -4;
                         $to_data['waf_comment'] = $value['pattern'];
                         break;
-                    case 'DENY_BY_WAF_FILE':
-                        $to_data['status_efw']  = -5;
-                        $to_data['waf_comment'] = $value['pattern'];
-                        break;
                     case 'DENY_BY_WAF_EXPLOIT':
                         $to_data['status_efw']  = -6;
                         $to_data['waf_comment'] = $value['pattern'];
                         break;
+                    /**
+                     * UploadChecker module
+                     */
+                    case 'DENY_BY_WAF_FILE':
+                        $to_data['status_efw']  = -5;
+                        $to_data['waf_comment'] = $value['pattern'];
+                        break;
+                    /**
+                     * Brute force
+                     */
                     case 'DENY_BY_BFP':
                         $to_data['status_efw'] = -7;
                         break;
+                    /**
+                     * Brute force temp 24h block
+                     */
                     case 'DENY_BY_WAF_BLOCKER':
                         $to_data['status_efw'] = -10;
                         $to_data['waf_comment'] = 'Blocked for 24 hours - several WAF attacks in a row';
