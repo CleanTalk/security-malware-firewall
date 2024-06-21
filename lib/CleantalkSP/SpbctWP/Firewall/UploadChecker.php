@@ -241,7 +241,7 @@ class UploadChecker extends FirewallModule
         global $spbc;
 
         // Show initial check message
-        show_message($spbc->data["wl_brandname"] . sprintf(' is checking the uploaded %s&#8230;', $args_hook_extra['type']));
+        show_message($spbc->data["wl_brandname"] . sprintf(' Signatures analysis is checking the uploaded %s&#8230;', $args_hook_extra['type']));
 
         // Prepare and run scan
         $dir_scan = new \CleantalkSP\SpbctWP\Scanner\DirectoryScan(

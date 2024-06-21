@@ -17,6 +17,7 @@ use CleantalkSP\Common\Scanner\HeuristicAnalyser\Structures\TokenGroups;
  * @property Token|null $next3 Iteration Token
  * @property Token|null $next4 Iteration Token
  */
+#[\AllowDynamicProperties]
 class Tokens implements \Iterator, \ArrayAccess, \Countable
 {
     /**

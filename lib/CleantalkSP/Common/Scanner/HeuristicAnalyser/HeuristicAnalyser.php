@@ -209,7 +209,7 @@ class HeuristicAnalyser
             $this->path      = $input['path'];
             $this->curr_dir  = dirname($this->path);
             $this->extension = pathinfo($this->path, PATHINFO_EXTENSION);
-            $this->checkFileSize(filesize($this->path));
+            $this->checkFileSize((int)filesize($this->path));
             $this->checkFileAccessibility();
             $this->file_size    = (int)filesize($this->path);
             $this->file_work    = file_get_contents($this->path);
@@ -287,9 +287,13 @@ class HeuristicAnalyser
         // Analysing code style
         // Do this, only for initial code
         if ( ! $this->evaluations->evaluations ) {
-            if ( $this->extension !== 'html' && $this->extension !== 'js' ) {
-                //todo turn this back after task finished https://doboard.com/1/task/6692
-                //$this->code_style->analyseLineLengths($this->file_content);
+            if (
+                $this->extension !== 'html' &&
+                $this->extension !== 'htm' &&
+                $this->extension !== 'shtml' &&
+                $this->extension !== 'js'
+            ) {
+                $this->code_style->analyseLineLengths($this->file_content);
                 $this->code_style->analyseHumanUnreadableCode($this->file_content);
                 $this->code_style->analyseWeightOfNoise($this->file_content);
             }
