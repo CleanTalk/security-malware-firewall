@@ -1029,8 +1029,8 @@ function spbc_scanner_file_approve__bulk($ids = array())
 
 function spbc_scanner_file_disapprove__bulk($ids = array())
 {
-    if ( ! $ids) {
-        return array('error' => 'Noting to disapprove');
+    if ( ! $ids ) {
+        return array('error' => 'Nothing to disapprove');
     }
 
     $out = array();
@@ -1038,7 +1038,7 @@ function spbc_scanner_file_disapprove__bulk($ids = array())
     foreach ($ids as $id) {
         $result = spbc_scanner_file_disapprove(true, $id);
 
-        if ( ! empty($result['error'])) {
+        if ( ! empty($result['error']) ) {
             $file_info             = spbc_scanner_get_file_by_id($id);
             $file_path             = isset($file_info['path']) ? $file_info['path'] : 'UNKNOWN_FILE';
             $out['error']          = 'Some files where not updated.';
@@ -1161,7 +1161,10 @@ function spbc_get_sql_where_addiction_for_table_of_category($category)
                         OR (status = "INFECTED" AND severity = "SUSPICIOUS" AND last_sent IS NULL)';
             break;
         case 'approved':
-            $res = ' WHERE ( status = "APPROVED_BY_USER" OR status = "APPROVED_BY_CT" OR status = "APPROVED_BY_CLOUD") AND source_type IS NULL';
+            $res = ' WHERE status = "APPROVED_BY_USER" AND source_type IS NULL';
+            break;
+        case 'approved_by_cloud':
+            $res = ' WHERE ( status = "APPROVED_BY_CT" OR status = "APPROVED_BY_CLOUD") AND source_type IS NULL';
             break;
         case 'analysis_log':
             $res = ' WHERE last_sent IS NOT NULL';
@@ -1226,7 +1229,7 @@ function spbc_scanner_file_disapprove($direct_call = false, $file_id = null)
 
     $time_start = microtime(true);
 
-    global $spbc, $wpdb;
+    global $wpdb;
 
     $root_path = spbc_get_root_path();
     $file_id   = $direct_call
@@ -1242,7 +1245,7 @@ function spbc_scanner_file_disapprove($direct_call = false, $file_id = null)
         $sql_result = $wpdb->get_results($sql, ARRAY_A);
         $file_info  = $sql_result[0];
 
-        if ( ! empty($file_info)) {
+        if ( ! empty($file_info) ) {
             if (file_exists($root_path . $file_info['path'])) {
                 if (is_readable($root_path . $file_info['path'])) {
                     // Getting file && API call
