@@ -60,12 +60,33 @@ class Controller
         self::getDebugState();
 
         if (self::$debug) {
+            Logger::setSaltValue();
             Logger::log('check remote call = ' . (int)Service::isRC());
         }
 
         Service::setStorage(isset($params['storage']) ? $params['storage'] : 'file');
 
-        if (self::status() === self::STATUS_STOPPED && Service::isRC() && Service::isCompareRequest()) {
+        if (self::status() !== self::STATUS_STOPPED) {
+            return;
+        }
+
+        if (!Service::isRC()) {
+            if (Service::isMinIntervalPassed(self::EXECUTION_MIN_INTERVAL)) {
+                if (self::$debug) {
+                    Logger::log('attach js to make remote request');
+                }
+                ob_start(['CleantalkSP\Common\FSWatcher\Service', 'attachJS']);
+            }
+
+            return;
+        }
+
+        if (!Service::isRateLimitPass()) {
+            http_response_code(403);
+            die('Rate limit exceeded. Protected - Security by CleanTalk.');
+        }
+
+        if (Service::isCompareRequest()) {
             if (self::$debug) {
                 Logger::log('run compare file system');
             }
@@ -79,19 +100,12 @@ class Controller
             die();
         }
 
-        if (self::status() === self::STATUS_STOPPED && ( Service::isRC() || ( Service::isRC() && Service::isCreateSnapshotRequest() ))) {
+        if (Service::isCreateSnapshotRequest()) {
             if (self::$debug) {
                 Logger::log('run scan file system');
             }
             self::run($params);
             die(json_encode('OK'));
-        }
-
-        if (self::status() === self::STATUS_STOPPED && Service::isMinIntervalPassed(self::EXECUTION_MIN_INTERVAL)) {
-            if (self::$debug) {
-                Logger::log('attach js to make remote request');
-            }
-            ob_start(['CleantalkSP\Common\FSWatcher\Service', 'attachJS']);
         }
     }
 

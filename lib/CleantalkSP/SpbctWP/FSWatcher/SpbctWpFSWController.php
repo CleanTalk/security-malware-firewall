@@ -65,14 +65,36 @@ class SpbctWpFSWController extends \CleantalkSP\Common\FSWatcher\Controller
         self::getDebugState();
 
         if (self::$debug) {
+            Logger::setSaltValue($spbc->data['salt']);
             Logger::log('check remote call = ' . (int)SpbctWpFSWService::isRC());
         }
 
         SpbctWpFSWService::setStorage(isset($params['storage']) ? $params['storage'] : 'file');
 
-        if (self::status() === self::STATUS_STOPPED && SpbctWpFSWService::isRC() && SpbctWpFSWService::isCompareRequest()) {
+        if (self::status() !== self::STATUS_STOPPED) {
+            return;
+        }
+
+        if (!SpbctWpFSWService::isRC()) {
+            $min_exec_time = $spbc->settings['scanner__fs_watcher__snapshots_period'] ?: parent::EXECUTION_MIN_INTERVAL;
+            if (SpbctWpFSWService::isMinIntervalPassed($min_exec_time)) {
+                if (self::$debug) {
+                    Logger::log('attach js to make remote request');
+                }
+                ob_start(['CleantalkSP\SpbctWP\FSWatcher\SpbctWpFSWService', 'attachJS']);
+            }
+
+            return;
+        }
+
+        if (!SpbctWpFSWService::isRateLimitPass()) {
+            echo json_encode(array('error' => 'Rate limit exceeded. Protected - Security by CleanTalk.'));
+            die();
+        }
+
+        if (SpbctWpFSWService::isCompareRequest()) {
             if (self::$debug) {
-                Logger::log('run compare file system');
+                Logger::log('run compare file system logs');
             }
             $compare_result = SpbctWpFSWAnalyzer::getCompareResult();
             if (false === $compare_result) {
@@ -84,7 +106,7 @@ class SpbctWpFSWController extends \CleantalkSP\Common\FSWatcher\Controller
             die();
         }
 
-        if (self::status() === self::STATUS_STOPPED && SpbctWpFSWService::isRC() && SpbctWpFSWService::isViewFileRequest()) {
+        if (SpbctWpFSWService::isViewFileRequest()) {
             if (self::$debug) {
                 Logger::log('run view file method');
             }
@@ -99,22 +121,14 @@ class SpbctWpFSWController extends \CleantalkSP\Common\FSWatcher\Controller
             die();
         }
 
-        if (self::status() === self::STATUS_STOPPED && ( SpbctWpFSWService::isRC() || ( SpbctWpFSWService::isRC() && SpbctWpFSWService::isCreateSnapshotRequest() ))) {
+        if (SpbctWpFSWService::isCreateSnapshotRequest()) {
             if (self::$debug) {
                 Logger::log('run scan file system');
             }
             self::run($params);
             die(json_encode('OK'));
         }
-        $min_exec_time = $spbc->settings['scanner__fs_watcher__snapshots_period'] ?: parent::EXECUTION_MIN_INTERVAL;
-        if (self::status() === self::STATUS_STOPPED && SpbctWpFSWService::isMinIntervalPassed($min_exec_time)) {
-            if (self::$debug) {
-                Logger::log('attach js to make remote request');
-            }
-            ob_start(['CleantalkSP\SpbctWP\FSWatcher\SpbctWpFSWService', 'attachJS']);
-        }
     }
-
 
     /**
      * Scanning file system stop trigger
