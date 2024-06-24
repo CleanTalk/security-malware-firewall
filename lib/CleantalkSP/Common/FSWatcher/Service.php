@@ -177,4 +177,15 @@ class Service
     {
         return isset($_POST['fswatcher_token']) && $_POST['fswatcher_token'] === static::generateFsWatcherToken();
     }
+
+    /**
+     * Is rate limit pass
+     * Must be overridden in child class
+     *
+     * @return bool
+     */
+    public static function isRateLimitPass()
+    {
+        return true;
+    }
 }

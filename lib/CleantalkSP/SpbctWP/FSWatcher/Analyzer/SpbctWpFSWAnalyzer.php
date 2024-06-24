@@ -46,13 +46,16 @@ class SpbctWpFSWAnalyzer extends \CleantalkSP\Common\FSWatcher\Analyzer\Analyzer
     public static function getViewFile()
     {
         $path = isset($_POST['fswatcher_file_path']) ? $_POST['fswatcher_file_path'] : false;
-        $journals = isset($_POST['fswatcher_journals']) ? json_decode($_POST['fswatcher_journals']) : false;
+
+        $journals_first = isset($_POST['fswatcher__first_date']) ? $_POST['fswatcher__first_date'] : false;
+        $journals_second = isset($_POST['fswatcher__second_date']) ? $_POST['fswatcher__second_date'] : false;
+        $journals = array($journals_first, $journals_second);
 
         if (!$path || !is_file($path)) {
             throw new \Exception('File path is incorrect.');
         }
 
-        if (!$journals || !is_array($journals)) {
+        if (!$journals[0] || !$journals[1]) {
             throw new \Exception('Provided journals paths are incorrect.');
         }
 
