@@ -81,4 +81,32 @@ class SpbctWpFSWService extends \CleantalkSP\Common\FSWatcher\Service
     {
         return isset($_POST['fswatcher_token']) && spbc_check_ajax_referer('spbc_secret_fs_watcher_token', 'fswatcher_token');
     }
+
+    public static function isRateLimitPass()
+    {
+        $time = time();
+
+        $rateLimit = get_option('spbc_rate_limit_fswatcher', [
+            'limit' => 30,
+            'expires_in' => $time + 60,
+            'attempts' => 0,
+        ]);
+
+        if ($rateLimit['expires_in'] <= $time) {
+            $rateLimit['expires_in'] = $time + 60;
+            $rateLimit['attempts'] = 0;
+        }
+
+        if ($rateLimit['expires_in'] > $time) {
+            $rateLimit['attempts']++;
+        }
+
+        if ($rateLimit['attempts'] >= $rateLimit['limit']) {
+            return false;
+        }
+
+        update_option('spbc_rate_limit_fswatcher', $rateLimit);
+
+        return true;
+    }
 }
