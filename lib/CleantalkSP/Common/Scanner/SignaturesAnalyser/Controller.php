@@ -93,7 +93,7 @@ class Controller
                             ( $is_regexp && preg_match($signature['body'], $file_content) ) ||
                             ( ! $is_regexp &&
                                 ( strripos($file_content, stripslashes($signature['body'])) !== false ||
-                                  strripos($file_content, $signature['body']) !== false) )
+                                    strripos($file_content, $signature['body']) !== false) )
                         ) {
                             $line_number                           = Helper::getNeedleStringNumberFromFile(
                                 $root_path . $file_info->path,
