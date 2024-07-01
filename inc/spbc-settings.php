@@ -1969,13 +1969,13 @@ function spbc_field_security_logs__prepare_data(&$table)
                 $page = '-';
             } elseif (strlen($url) >= 60) {
                 $page = '<div class="spbcShortText">'
-                    . '<a href="' . $url . '" target="_blank">' . substr($url, 0, 60) . '...</a>'
+                    . '<a href="' . Escape::escAttr($url) . '" target="_blank">' . substr($url, 0, 60) . '...</a>'
                     . '</div>'
                     . '<div class="spbcFullText spbcFullText-right spbc_hide_table_cell_desc">'
-                    . '<a href="' . $url . '" target="_blank">' . $url . '</a>'
+                    . '<a href="' . Escape::escAttr($url) . '" target="_blank">' . $url . '</a>'
                     . '</div>';
             } else {
-                $page = "<a href='" . $url . "' target='_blank'>" . $url . "</a>";
+                $page = "<a href='" . Escape::escAttr($url) . "' target='_blank'>" . $url . "</a>";
             }
 
             $parse_action = spbc_parse_action_from_admin_page_uri($url);
