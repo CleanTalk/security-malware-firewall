@@ -38,6 +38,11 @@ class CureLogRecord extends DTO
      * @var string
      */
     public $scanner_start_local_date = '';
+    /**
+     * @var string
+     * @psalm-suppress PossiblyUnusedProperty //todo if we decide to save heuristic re-check fails - we should use this property
+     */
+    public $heuristic_rescan_result = null;
 
     protected $obligatory_properties = [
         'fast_hash',
@@ -46,7 +51,8 @@ class CureLogRecord extends DTO
         'cci_cured',
         'fail_reason',
         'last_cure_date',
-        'scanner_start_local_date'
+        'scanner_start_local_date',
+        'heuristic_rescan_result'
     ];
 
     public function __construct($data)
