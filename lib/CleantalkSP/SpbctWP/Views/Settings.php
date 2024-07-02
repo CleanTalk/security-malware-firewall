@@ -24,6 +24,7 @@ class Settings
             "isWPMSMainSite" => is_main_site(),
             "isSecFWEnabled" => $spbc->settings['secfw__enabled'],
             "isFsWatcherEnabled" => $spbc->settings['scanner__fs_watcher'],
+            "isVulnerabilityCheckEnabled" => $spbc->settings['vulnerability_check__enable_cron'],
         ];
 
         echo '<div id="spbct-page-tabs--react" data-data=\'' . json_encode($data) . '\'></div>';

@@ -2,6 +2,7 @@
 
 namespace CleantalkSP\SpbctWP;
 
+use CleantalkSP\SpbctWP\AdjustToEnvironmentModule\AdjustToEnvironmentHandler;
 use CleantalkSP\SpbctWP\Cron as SpbcCron;
 use CleantalkSP\SpbctWP\HTTP\CDNHeadersChecker;
 
@@ -124,6 +125,10 @@ class Activator
         if ( apply_filters('spbc_is_get_api_key', false) ) {
             spbc_get_key_auto(true);
         }
+
+        // Try to adjust to environment
+        $adjust = new AdjustToEnvironmentHandler();
+        $adjust->handle();
     }
 
     /**
