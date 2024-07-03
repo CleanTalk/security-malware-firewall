@@ -2,6 +2,8 @@
 
 namespace CleantalkSP\SpbctWP\FeatureRestriction;
 
+use CleantalkSP\SpbctWP\LinkConstructor;
+
 class FeatureRestrictionView
 {
     /**
@@ -44,8 +46,12 @@ class FeatureRestrictionView
         global $spbc;
         $renew_text = __('Renew your license, unlock all Security features and join to 20k+ WordPress users who trust CleanTalk!', 'security-malware-firewall');
         $button_text = __('Renew Security license', 'security-malware-firewall');
-        $utm_marks = '&utm_source=wp-backend&utm_medium=cpc&utm_campaign=WP%%20backend%%20trial_security';
-        $renew_link = 'https://p.cleantalk.org/?featured=&product_id=4&user_token=' . $spbc->user_token . $utm_marks;
+        $link_tag = linkConstructor::buildRenewalLinkATag(
+            $spbc->user_token,
+            sprintf('<input type="button" class="button button-primary" value="%s"/>', $button_text),
+            4,
+            'renew_notice_service_restricted'
+        );
         $features_list_template = '<ul style="
                     list-style: none;
                     display: flex;
@@ -79,9 +85,7 @@ class FeatureRestrictionView
                         <h3 style="margin: 5px; ">%s</h3>
                     </div>
                     <div style="margin-top: 20px; margin-bottom: 20px; ">
-                        <a target="_blank" href="%s">
-                            <input type="button" class="button button-primary" value="%s"/>
-                        </a>
+                        %s
                     </div>                
                     <div>
                         %s
@@ -91,8 +95,7 @@ class FeatureRestrictionView
         return sprintf(
             $notice_template,
             $renew_text,
-            $renew_link,
-            $button_text,
+            $link_tag,
             $features_list_template
         );
     }

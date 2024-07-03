@@ -1,5 +1,7 @@
 <?php
 
+use CleantalkSP\SpbctWP\LinkConstructor;
+
 /**
  * Adding parent nodes for plugins depending on installed ones
  *
@@ -24,16 +26,19 @@ function spbc_admin__admin_bar__add_structure($wp_admin_bar)
         'meta'  => array('class' => 'cleantalk-admin_bar--list_wrapper'),
     ));
 
-    $utm_marks = '&utm_source=wp-backend&utm_medium=cpc&utm_campaign=WP%%20backend%%20trial_security';
-    $link = 'https://p.cleantalk.org/?featured=&product_id=4&user_token=' . $spbc->user_token . $utm_marks;
+    $link_tag = linkConstructor::buildRenewalLinkATag(
+        $spbc->user_token,
+        __('Renew Security', 'security-malware-firewall'),
+        4,
+        'renew_admin_bar_spbct'
+    );
+
     $title_link = $spbc->data["wl_mode_enabled"] ? $spbc->data["wl_support_url"] :
-        "<span><a href='{$link}' target='_blank'>";
+        '<span>' . $link_tag . '</span>';
 
     // Security
     $title = $spbc->notice_trial
         ? $title_link
-          . __('Renew Security', 'security-malware-firewall')
-          . '</a></span>'
         : '<a>' . __('Security', 'security-malware-firewall') . '</a>';
 
     $attention_mark = $spbc->notice_show ? '<i class="spbc-icon-attention-alt ctlk---red"></i>' : '';
@@ -52,8 +57,14 @@ function spbc_admin__admin_bar__add_structure($wp_admin_bar)
     if ( ! $apbct) {
         $apbct_title = '<a>' . __('Anti-Spam', 'cleantalk-spam-protect') . '</a>';
     } elseif ($apbct->admin_bar_enabled) {
+        $link_tag = linkConstructor::buildRenewalLinkATag(
+            $spbc->user_token,
+            __('Renew Anti-Spam', 'security-malware-firewall'),
+            1,
+            'renew_admin_bar_cross_link_apbct'
+        );
         $apbct_title = $apbct->notice_trial == 1
-            ? "<span><a class='ctlk---red' href='https://cleantalk.org/my/bill/recharge?utm_source=wp-backend&utm_medium=cpc&utm_campaign=WP%20backend%20trial&user_token={$apbct->user_token}&cp_mode=antispam' target='_blank'>" . __('Renew Anti-Spam', 'cleantalk-spam-protect') . '</a></span>'
+            ? '<span>' . $link_tag . '</span>'
             : '<a>' . __('Anti-Spam', 'cleantalk-spam-protect') . '</a>';
 
         $apbct_attention_mark = $apbct->notice_show ? '<i class="apbct-icon-attention-alt"></i>' : '';
