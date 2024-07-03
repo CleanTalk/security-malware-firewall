@@ -17,6 +17,7 @@ use CleantalkSP\Common\Scanner\HeuristicAnalyser\Modules\Strings;
 use CleantalkSP\Common\Scanner\HeuristicAnalyser\Modules\Tokens;
 use CleantalkSP\Common\Scanner\HeuristicAnalyser\Modules\Transformations;
 use CleantalkSP\Common\Scanner\HeuristicAnalyser\Modules\Variables;
+use CleantalkSP\Common\Scanner\HeuristicAnalyser\Modules\PHPCodeValidator;
 
 /**
  * Class Heuristic
@@ -178,6 +179,11 @@ class HeuristicAnalyser
      */
     private $mathematics;
 
+    /*
+     * @var PHPCodeValidator
+     */
+    private $php_code_validator;
+
     /**
      * Heuristic constructor.
      * Getting common info about file|text and it's content
@@ -229,6 +235,8 @@ class HeuristicAnalyser
         $this->includes        = new Includes($this->tokens, $this->variables, $this->curr_dir, $this->is_text);
         $this->evaluations     = new Evaluations($this->tokens, $this->variables, $this->includes, $this->sqls);
         $this->code_style      = new CodeStyle($this->tokens);
+        $this->php_code_validator = new PHPCodeValidator($this->tokens);
+
 
         if ( isset($input['path']) && version_compare(PHP_VERSION, '8.1', '>=') && extension_loaded('mbstring') ) {
             // Do not run entropy analysis on included constructs
@@ -276,12 +284,17 @@ class HeuristicAnalyser
      *
      * @return void
      * @psalm-suppress PossiblyUnusedMethod
+     * @throws HeuristicScannerException
      */
     public function processContent()
     {
         // Skip files does not contain PHP code
-        if ( $this->extension !== 'php' && ! $this->code_style->hasPHPOpenTags() ) {
-            return;
+        if ( $this->extension !== 'php' && !$this->php_code_validator->hasCorrectPHPOpenTags() ) {
+            throw new HeuristicScannerException('NOT_PHP_CODE');
+        }
+
+        if (!$this->php_code_validator->isValidPHPCode()) {
+            throw new HeuristicScannerException('NOT_VALID_PHP_CODE');
         }
 
         // Analysing code style
