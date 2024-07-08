@@ -947,3 +947,22 @@ function spbc_brief_clear_and_reformat_records($current_block_data, $days_limit)
     }
     return $out;
 }
+
+/**
+ * Wrapper for wp_kses to prevent hook execution
+ * @param string $content
+ * @param array[]|string $allowed_html
+ * @param array $allowed_protocols
+ * @return string
+ */
+function spbc_wp_kses($content, $allowed_html, $allowed_protocols = array())
+{
+    if ( empty($allowed_protocols) ) {
+        $allowed_protocols = wp_allowed_protocols();
+    }
+
+    $content = wp_kses_no_null($content, array('slash_zero' => 'keep'));
+    $content = wp_kses_normalize_entities($content);
+
+    return wp_kses_split($content, $allowed_html, $allowed_protocols);
+}
