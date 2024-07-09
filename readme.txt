@@ -4,7 +4,7 @@ Tags: security, firewall, malware, wordpress security, brute force
 Requires at least: 3.0
 Tested up to: 6.5
 Requires PHP: 5.6
-Stable tag: 2.136.1
+Stable tag: 2.137
 License: GPLv2
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -336,6 +336,38 @@ This is required for the Security FireWall to function properly. Plugins that ar
 31. **File System Watcher tab**. File System Watcher interface.
 
 == Changelog ==
+
+= 2.137 July 09 2024
+* Fix. Psalm suppress UndefinedMethod
+* Fix. Eslint
+* Upd. Disabling analyse Long Line
+* Upd. Checking memory_limit
+* Upd. Scan. Updated flow for upload hashes.
+* Fix. Deprecated conversion of false to array in getPluginReportStatic
+* Upd. Changes in the operation of modal windows
+* Fix. CamelCase attributes for CriticalUpdate
+* Fix. Code. Common lib updated.
+* Fix. Settings. Visited pages output in security logs fixed.
+* New. Scan. Update front estimates time.
+* Upd. Local results clearance. Delete backups, cure logs, cured files data.
+* Ref. Cure. New CureStage class used to run curing.
+* New. AdjustModule. Setup handler to adjust w3tc
+* New. Settings. Critical updates tab implemented.
+* Upd. VulnerabilityAlarmView.php. Text updates.
+* Upd. VulnerabilityAlarm Service. Every vulnerable theme has unique link now.
+* Upd. VulnerabilityAlarmView. Padding added for lists of items on the tab.
+* Upd. VulnerabilityAlarm Service. Show PSC modules. Other fixes.
+* Fix. VulnerabilityAlarmView.php. Text.
+* Fix. VulnerabilityAlarmService. Fix logic.
+* Upd. VulnerabilityAlarmService. Update SGV on tab.
+* Upd. VulnerabilityAlarmService. Fixed versions check on checkModule iteration.
+* Fix. Sacnner. Backups. Backup ID fixed.
+* New. RemoteCalls. New RC "launch_background_scan" to launch scan in background.
+* Fix. VulnerabilityAlarm.php. Themes collecting fixed.
+* Ref. VulnerabilityAlarm. Names.
+* Fix. VulnerabilityAlarmService. PHP 8.1 compat fix.
+* Upd. VulnerabilityAlarmView. Versions added.
+* Fix. Call function on null
 
 = 2.136.1 July 02 2024
 * Fix. Settings. Visited pages output in security logs fixed.

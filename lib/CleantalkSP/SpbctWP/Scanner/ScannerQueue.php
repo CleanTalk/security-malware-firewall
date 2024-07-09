@@ -32,6 +32,7 @@ use CleantalkSP\SpbctWP\Helpers\Helper as QueueHelper;
 use CleantalkSP\SpbctWP\Helpers\CSV;
 use CleantalkSP\SpbctWP\RemoteCalls;
 use CleantalkSP\SpbctWP\Scanner\Stages\SendResultsStage;
+use CleantalkSP\SpbctWP\Scanner\Stages\CureStage;
 
 class ScannerQueue
 {
@@ -1013,7 +1014,7 @@ class ScannerQueue
             $spbc->data['scanner']['checksums_count_ct'] = count($result);
             $spbc->save('data');
 
-            $where = implode('\',\'', array_column($result, 1));
+            $where = implode('\',\'', $result);
             if ( ! preg_match('#^[a-zA-Z0-9\',]+$#', $where) ) {
                 return array('error' => 'BAD_PARAMS');
             }
@@ -1093,7 +1094,8 @@ class ScannerQueue
             $spbc->data['scanner']['checksums_count_ct'] = count($result);
             $spbc->save('data');
 
-            $where = implode('\',\'', array_column($result, 1));
+            $where = implode('\',\'', $result);
+
             if ( ! preg_match('#^[a-zA-Z0-9\',]+$#', $where) ) {
                 return array('error' => 'BAD_PARAMS');
             }
@@ -1586,8 +1588,8 @@ class ScannerQueue
             \CleantalkSP\SpbctWP\Cron::updateTask(
                 'scanner_resend_pscan_files',
                 'spbc_scanner_resend_pscan_files',
-                SPBC_PSCAN_UPDATE_FILES_STATUS_PERIOD,
-                time() + SPBC_PSCAN_UPDATE_FILES_STATUS_PERIOD,
+                SPBC_PSCAN_RESEND_FILES_STATUS_PERIOD,
+                time() + SPBC_PSCAN_RESEND_FILES_STATUS_PERIOD,
                 array('do_rescan' => false)
             );
             \CleantalkSP\SpbctWP\Cron::updateTask(
@@ -1623,216 +1625,21 @@ class ScannerQueue
     }
 
     /**
+     * Run cure stage.
      * @param int $offset
      * @param int $amount
-     * @return \CleantalkSP\Common\Scanner\HeuristicAnalyser\Structures\Verdict|string[]|array
-     * @psalm-suppress UnusedVariable
+     * @return array Prepared data for AJAX call response.
      */
-    public function auto_cure($offset = 0, $amount = 1) // phpcs:ignore PSR1.Methods.CamelCapsMethodName.NotCamelCaps
+    public function auto_cure($offset = null, $amount = null) // phpcs:ignore PSR1.Methods.CamelCapsMethodName.NotCamelCaps
     {
-        $offset = isset($offset) ? $offset : $this->offset;
         $amount = isset($amount) ? $amount : $this->amount;
+        $offset = isset($offset) ? $offset : $this->offset;
 
-        global $spbc;
+        $cure_stage = new CureStage($this->db);
+        $cure_stage->runStage($offset, $amount);
 
-        $files = $this->db->fetchAll(
-            'SELECT * '
-            . ' FROM ' . SPBC_TBL_SCAN_FILES
-            . ' WHERE weak_spots LIKE "%\"SIGNATURES\":%";'
-        );
-
-        $scanning_stages_storage = new ScanningStagesStorage();
-        $scanning_stages_storage->converter->loadCollection();
-        $stage_data_obj = $scanning_stages_storage->getStage(AutoCure::class);
-
-        $processed = 0;
-        $cured = array();
-
-        if ( $files !== null && count($files)) {
-            $stage_data_obj->increase('count_files', count($files));
-
-            //get root path to rescan
-            $root_path  = spbc_get_root_path();
-
-            // init heuristic module to rescan
-            $heuristic_scanner = new \CleantalkSP\Common\Scanner\HeuristicAnalyser\Controller();
-
-            foreach ( $files as $file ) {
-                //init cure log item
-                $cure_log_record = new CureLogRecord(array(
-                    'fast_hash' => isset($file['fast_hash']) ? $file['fast_hash'] : '',
-                    'real_path' => isset($file['path']) ? $file['path'] : '',
-                    'cured' => 0,
-                    'has_backup' => 0,
-                    'cci_cured' => null,
-                    'fail_reason' => '',
-                    'last_cure_date' => time(),
-                    'scanner_start_local_date' => $spbc->data['scanner']['scanner_start_local_date'],
-                ));
-                // get array of weakspots from JSON of table row
-                $weak_spots = json_decode($file['weak_spots'], true);
-                //init empty string of signatures
-                $signatures_in_file = '';
-                if ( ! empty($weak_spots['SIGNATURES']) ) {
-                    $signatures_in_file = array();
-                    foreach ( $weak_spots['SIGNATURES'] as $signatures_in_string ) {
-                        $signatures_in_file = array_merge(
-                            $signatures_in_file,
-                            array_diff($signatures_in_string, $signatures_in_file)
-                        );
-                    }
-                    $signatures_in_file = implode(',', $signatures_in_file);
-                }
-
-                //check if siganture can be cured - has instructions
-                $signatures_with_cci = ! empty($signatures_in_file)
-                    ? $this->db->fetchAll(
-                        'SELECT * '
-                        . ' FROM ' . SPBC_TBL_SCAN_SIGNATURES
-                        . ' WHERE id IN (' . $signatures_in_file . ') AND cci IS NOT NULL AND cci <> \'\''
-                    )
-                    : null;
-
-                //init cure log
-                $cure_log = new CureLog();
-
-                if ( ! empty($signatures_with_cci) ) {
-                    //skip files with no backup
-                    if (!spbc_file_has_backup($file['path'])) {
-                        $cure_log_record->fail_reason = 'File has no backup.';
-                        $cure_log->logCureResult($cure_log_record);
-                        $processed++;
-                        continue;
-                    }
-
-                    //process Cure
-                    $cure = new Cure($file);
-
-                    if ( ! empty($cure->result['error']) ) {
-                        //if Cure process errored keep the reason
-                        $cure_log_record->fail_reason = $cure->result['error'];
-                    } else {
-                        //old log way
-                        $cured[$file['path']] = 'CURED';
-
-                        //new log way
-                        $cure_log_record->cured = 1;
-                        $cure_log_record->cci_cured = count($weak_spots['SIGNATURES']);
-
-                        //file is cured, remove signatures weakspots
-                        unset($weak_spots['SIGNATURES']);
-
-                        //process any other weakspots to save them
-                        if ( empty($weak_spots) ) {
-                            $weak_spots       = 'NULL';
-                            $severity = 'NULL';
-                            $status   = 'OK';
-                        } else {
-                            $weak_spots       = QueueHelper::prepareParamForSQLQuery(json_encode($weak_spots));
-                            $severity = $file['severity'];
-                            $status   = $file['status'];
-                        }
-
-                        //update scan results table
-                        $this->db->execute(
-                            'UPDATE ' . SPBC_TBL_SCAN_FILES
-                            . ' SET '
-                            . 'weak_spots = ' . $weak_spots . ','
-                            . 'severity = "' . $severity . '",'
-                            . 'status = "' . $status . '"'
-                            . ' WHERE fast_hash = "' . $file['fast_hash'] . '";'
-                        );
-
-                        // Scanning file with heuristic after the cure
-                        $file_to_check_with_heuristic = $this->db->fetchAll(
-                            'SELECT * '
-                            . ' FROM ' . SPBC_TBL_SCAN_FILES
-                            . ' WHERE fast_hash = "' . $file['fast_hash'] . '";'
-                        );
-                        $file_to_check_with_heuristic = $file_to_check_with_heuristic[0];
-
-                        $file_to_check = new FileInfoExtended($file);
-                        $result = $heuristic_scanner->scanFile($file_to_check, $root_path);
-                        if ( is_object($result) ) {
-                            $this->db->execute(
-                                'UPDATE ' . SPBC_TBL_SCAN_FILES
-                                . ' SET'
-                                . " checked_heuristic = 1,"
-                                . ' status = \'' . $result->status . '\','
-                                . ' severity = ' . ($result->severity ? '\'' . $result->severity . '\'' : 'NULL') . ','
-                                . ' weak_spots = ' . ($result->weak_spots ? QueueHelper::prepareParamForSQLQuery(
-                                    json_encode($result->weak_spots)
-                                ) : 'NULL')
-                                . ' WHERE fast_hash = \'' . $file_to_check_with_heuristic['fast_hash'] . '\';'
-                            );
-                        } else {
-                            $out = $result;
-                        }
-                    }
-                    //record log on any Cure result
-                    $cure_log->logCureResult($cure_log_record);
-                } else {
-                    //can not be cured, log this
-                    $cure_log_record->cured = 0;
-                    $cure_log_record->fail_reason = 'No CCI found.';
-                    $cure_log->logCureResult($cure_log_record);
-                }
-                //inc processed count
-                $processed++;
-            }
-            //this stuff is used to send cure logs
-            $spbc->data['scanner']['cured'] = $cured;
-            $spbc->save('data');
-        }
-
-        // prepare output
-        $out = ! empty($out)
-            //this fires only if heuristic rescan fails
-            ? $out
-            : array(
-                'processed' => $processed,
-                'cured'     => count($cured),
-                'end'       => $processed >= count($files),
-                'message'   => __(
-                    'We recommend changing your secret authentication keys and salts when curing is done.',
-                    'security-malware-firewall'
-                )
-            );
-
-        $stage_data_obj->increase('count_cured', count($cured));
-
-        // Counting files to cure if offset is 0
-        if ( $offset === 0 ) {
-            $result_db = $this->db->fetch(
-                'SELECT COUNT(*) AS cnt FROM ' . SPBC_TBL_SCAN_FILES . ' WHERE weak_spots LIKE "%SIGNATURES%";',
-                OBJECT
-            );
-            if ( $result_db !== null ) {
-                $out = $result_db !== null
-                    ? array_merge($out, array('total' => $result_db->cnt,))
-                    : array_merge(
-                        $out,
-                        array(
-                            'error'   => __FUNCTION__ . ' DataBase write error while counting files.',
-                            'comment' => substr($this->db->getLastError(), 0, 1000),
-                        )
-                    );
-            }
-        }
-
-        $scanning_stages_storage->saveToDb();
-
-        // Adding to log
-        ScanningLogFacade::writeToLog(
-            '<b>' . $stage_data_obj::getTitle() . '</b> ' . $stage_data_obj->getDescription()
-        );
-
-        $out['stage_data_for_logging'] = array(
-            'title' => $stage_data_obj::getTitle(),
-            'description' => $stage_data_obj->getDescription()
-        );
-
-        return $out;
+        //return prepared AJAX output
+        return $cure_stage->getStageResult();
     }
 
     /**

@@ -263,6 +263,7 @@ class State extends \CleantalkSP\Common\State
     // Scanner
         'scanner__controller'              => array('last_call' => 0, 'cooldown' => 1),
         'scanner__check_dir'              => array('last_call' => 0, 'cooldown' => 0),
+        'launch_background_scan'              => array('last_call' => 0, 'cooldown' => 0),
 
     // Debug
         'debug' => array('last_call' => 0,),
@@ -299,12 +300,14 @@ class State extends \CleantalkSP\Common\State
         'plugins_found_with_known_vulnerabilities' => 0,
         'plugins_info_requested'       => 0,
         'total_site_plugins_count'     => 0,
+        'names_vulnerable_plugins'     => array(),
     );
 
     public $default_scan_themes_info = array(
         'themes_found_with_known_vulnerabilities' => 0,
         'themes_info_requested'       => 0,
         'total_site_themes_count'     => 0,
+        'names_vulnerable_themes'     => array(),
     );
 
     /**

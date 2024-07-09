@@ -588,7 +588,7 @@ class UploadChecker extends FirewallModule
         } else {
             $plugin_data_to_check = static::getPluginDataFromFilesGlob($source);
         }
-        return $plugin_data_to_check !== false && VulnerabilityAlarm::checkOne($plugin_data_to_check['Name'], $plugin_data_to_check['Version']);
+        return $plugin_data_to_check !== false && VulnerabilityAlarm::checkSinglePluginViaAPI($plugin_data_to_check['Name'], $plugin_data_to_check['Version']);
     }
 
     /**

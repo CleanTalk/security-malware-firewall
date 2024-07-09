@@ -1,5 +1,6 @@
 <?php
 
+use CleantalkSP\SpbctWP\DB;
 use CleantalkSP\SpbctWP\Helper as SpbcHelper;
 use CleantalkSP\SpbctWP\API as SpbcAPI;
 use CleantalkSP\SpbctWP\Helpers\CSV;
@@ -8,6 +9,7 @@ use CleantalkSP\SpbctWP\Scanner\Cure;
 use CleantalkSP\SpbctWP\Scanner\CureLog\CureLog;
 use CleantalkSP\SpbctWP\Scanner\CureLog\CureLogRecord;
 use CleantalkSP\SpbctWP\Scanner\FrontendScan;
+use CleantalkSP\SpbctWP\Scanner\Stages\CureStage;
 use CleantalkSP\Variables\Post;
 use CleantalkSP\SpbctWP\Scanner\Links;
 use CleantalkSP\SpbctWP\Scanner;
@@ -361,7 +363,12 @@ function spbc_scanner_file_send($direct_call = false, $file_id = null, $do_resca
                                     if ($sql_result !== false) {
                                         $output = array('success' => true, 'result' => $api_response);
                                         //set new cron to resend unqueued files
-                                        \CleantalkSP\SpbctWP\Cron::updateTask('scanner_resend_pscan_files', 'spbc_scanner_resend_pscan_files', SPBC_PSCAN_UPDATE_FILES_STATUS_PERIOD, time() + SPBC_PSCAN_UPDATE_FILES_STATUS_PERIOD);
+                                        \CleantalkSP\SpbctWP\Cron::updateTask(
+                                            'scanner_resend_pscan_files',
+                                            'spbc_scanner_resend_pscan_files',
+                                            SPBC_PSCAN_RESEND_FILES_STATUS_PERIOD,
+                                            time() + SPBC_PSCAN_RESEND_FILES_STATUS_PERIOD
+                                        );
                                     //error on fail
                                     } else {
                                         $output = array('error' => 'DB_COULD_NOT_UPDATE pscan_pending_queue');
@@ -772,6 +779,7 @@ function spbc_scanner_pscan_check_analysis_status($direct_call = false, $file_id
             $file_info['pscan_file_id']
         );
 
+
         // Validate API response
         try {
             $api_response = spbc_scanner_validate_pscan_status_response($api_response);
@@ -789,22 +797,14 @@ function spbc_scanner_pscan_check_analysis_status($direct_call = false, $file_id
             /*
             * If file process is not finished, update data
             */
-            // Set old processing status to compare with next
-            $old_processing_status = !empty($file_info['pscan_processing_status']) ? $file_info['pscan_processing_status'] : null;
-            // Update processing status
-            if ( $api_response['processing_status'] !== $old_processing_status ) {
-                // Keep update result
-                $update_result = $wpdb->query(
-                    'UPDATE ' . SPBC_TBL_SCAN_FILES
-                    . ' SET '
-                    . ' pscan_pending_queue = 0, '
-                    . ' pscan_processing_status  = "' . $api_response['processing_status'] . '"'
-                    . ' WHERE pscan_file_id = "' . $file_info['pscan_file_id'] . '"'
-                );
-            } else {
-                // Status have not been changed, however status process is succesfull
-                $update_result = true;
-            }
+            $update_result = $wpdb->query(
+                'UPDATE ' . SPBC_TBL_SCAN_FILES
+                . ' SET '
+                . ' pscan_pending_queue = 0, '
+                . ' pscan_processing_status  = "' . $api_response['processing_status'] . '",'
+                . ' pscan_estimated_execution_time  = "' . $api_response['estimated_execution_time'] . '"'
+                . ' WHERE pscan_file_id = "' . $file_info['pscan_file_id'] . '"'
+            );
         } else {
             if ( $api_response['file_status'] === 'SAFE' ) {
                 /*
@@ -818,7 +818,8 @@ function spbc_scanner_pscan_check_analysis_status($direct_call = false, $file_id
                     . ' pscan_pending_queue = 0, '
                     . ' pscan_status  = "SAFE",'
                     . ' pscan_balls  = %s,'
-                    . ' status = "APPROVED_BY_CLOUD" '
+                    . ' status = "APPROVED_BY_CLOUD",'
+                    . ' pscan_estimated_execution_time = NULL'
                     . ' WHERE pscan_file_id = %s',
                     isset($api_response['file_balls']) ? $api_response['file_balls'] : '{SAFE:0}',
                     $file_info['pscan_file_id']
@@ -836,7 +837,8 @@ function spbc_scanner_pscan_check_analysis_status($direct_call = false, $file_id
                     . ' pscan_status  = %s ,'
                     . ' severity  = "CRITICAL",'
                     . ' pscan_balls  = %s,'
-                    . ' status  = "DENIED_BY_CLOUD"'
+                    . ' status  = "DENIED_BY_CLOUD",'
+                    . ' pscan_estimated_execution_time = NULL'
                     . ' WHERE pscan_file_id = %s',
                     $api_response['file_status'],
                     isset($api_response['file_balls']) ? $api_response['file_balls'] : '{DANGEROUS:0}',
@@ -954,6 +956,7 @@ function spbc_scanner_pscan_update_check_exclusions(array $file_info)
 
 /**
  * @param array $response API Response
+ * @param bool $await_estimated_data Do await estimated data set on undone files check
  * @return mixed API Response
  * @throws Exception if validation failed
  */
@@ -997,6 +1000,20 @@ function spbc_scanner_validate_pscan_status_response($response)
         if ( !in_array($response['file_status'], array('DANGEROUS', 'SAFE')) ) {
             throw new Exception('process finished, but status is unknown: "' . $response['file_status'] . "\"");
         }
+    }
+
+    //estimated time validation
+    if ( $response['processing_status'] !== 'DONE' ) {
+        if ( ! isset($response['estimated_execution_time'])) {
+            throw new Exception('response provided no estimated scan time');
+        }
+        //todo remove on business decision
+        //if ( ! isset($response['number_of_files'])) {
+        //  throw new Exception('response provided no number of estimated files');
+        //}
+        //if ( ! isset($response['number_of_files_scanned'])) {
+        //  throw new Exception('response provided no number of already scanned files');
+        //}
     }
 
     return $response;
@@ -2092,16 +2109,21 @@ function spbc_file_cure_ajax_action()
     wp_send_json_success($result);
 }
 
+/**
+ * AJAX handler for cure action.
+ * @param string $file_fast_hash
+ * @return string|WP_Error
+ */
 function spbc_cure_file($file_fast_hash)
 {
+    global $wpdb;
+
     if (is_null($file_fast_hash)) {
         return new WP_Error(
             '422',
             esc_html__('Error: File not found.', 'security-malware-firewall')
         );
     }
-
-    global $wpdb, $spbc;
 
     $file_data = $wpdb->get_row(
         'SELECT * '
@@ -2110,52 +2132,26 @@ function spbc_cure_file($file_fast_hash)
         ARRAY_A
     );
 
-    $cure_log = new CureLog();
-    $cure_results = new Cure($file_data);
-
-    if (isset($cure_results->result['error'])) {
+    if (empty($file_data)) {
         return new WP_Error(
             '422',
-            esc_html__('Error: ' . $cure_results->result['error'], 'security-malware-firewall')
+            esc_html__('Error: File not found in table.', 'security-malware-firewall')
         );
     }
 
-    $cure_log_record = new CureLogRecord(array(
-        'fast_hash' => isset($file_data['fast_hash']) ? $file_data['fast_hash'] : '',
-        'real_path' => isset($file_data['path']) ? $file_data['path'] : '',
-        'cured' => 1,
-        'has_backup' => 1,
-        'cci_cured' => null,
-        'fail_reason' => '',
-        'last_cure_date' => time(),
-        'scanner_start_local_date' => $spbc->data['scanner']['scanner_start_local_date'],
-    ));
+    $cure_log = new CureLog();
 
-    $ws = json_decode($file_data['weak_spots'], true);
-    $cure_log_record->cci_cured = count($ws['SIGNATURES']);
+    $cure_stage = new CureStage(DB::getInstance());
+    $cure_log_record = $cure_stage->processCure($file_data);
 
-    unset($ws['SIGNATURES']);
-    if ( empty($ws) ) {
-        $ws       = 'NULL';
-        $severity = 'NULL';
-        $status   = 'OK';
-    } else {
-        $ws       = QueueHelper::prepareParamForSQLQuery(json_encode($ws));
-        $severity = $file_data['severity'];
-        $status   = $file_data['status'];
-    }
-
-    $wpdb->query(
-        'UPDATE ' . SPBC_TBL_SCAN_FILES
-        . ' SET '
-        . 'weak_spots = ' . $ws . ','
-        . 'severity = "' . $severity . '",'
-        . 'status = "' . $status . '"'
-        . ' WHERE fast_hash = "' . $file_data['fast_hash'] . '";'
-    );
-
-    //record log
     $cure_log->logCureResult($cure_log_record);
+
+    if ( !empty($cure_log_record->fail_reason) ) {
+        return new WP_Error(
+            '422',
+            esc_html__('Error: ' . $cure_log_record->fail_reason, 'security-malware-firewall')
+        );
+    }
 
     return esc_html__('Success!', 'security-malware-firewall');
 }

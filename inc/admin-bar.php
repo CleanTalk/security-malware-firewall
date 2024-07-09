@@ -270,6 +270,13 @@ function spbc_admin__admin_bar__add_child_nodes($wp_admin_bar)
         'title'  => '<a href="' . $spbc->settings_link . '&spbc_tab=summary">' . __('Summary', 'security-malware-firewall') . '</a>',
     ));
 
+    // Critical updates
+    $wp_admin_bar->add_node(array(
+        'parent' => 'spbc__parent_node',
+        'id'     => 'spbc_admin_bar__critical_updates_link',
+        'title'  => '<a href="' . $spbc->settings_link . '&spbc_tab=critical_updates">' . __('Critical updates', 'security-malware-firewall') . '</a>',
+    ));
+
     // Support link
     $wp_admin_bar->add_node(array(
         'parent' => 'spbc__parent_node',

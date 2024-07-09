@@ -1,5 +1,6 @@
 <?php
 
+use CleantalkSP\SpbctWP\AdjustToEnvironmentModule\AdjustToEnvironmentSettings;
 use CleantalkSP\SpbctWP\Cron as SpbcCron;
 use CleantalkSP\SpbctWP\HTTP\CDNHeadersChecker;
 use CleantalkSP\SpbctWP\Scanner\ScanningLog\ScanningLogFacade;
@@ -13,6 +14,7 @@ use CleantalkSP\SpbctWP\Helpers\Arr;
 use CleantalkSP\SpbctWP\Helpers\CSV;
 use CleantalkSP\SpbctWP\Escape;
 use CleantalkSP\SpbctWP\Views\Settings;
+use CleantalkSP\SpbctWP\VulnerabilityAlarm\VulnerabilityAlarmView;
 
 // Scanner AJAX actions
 require_once(SPBC_PLUGIN_DIR . 'inc/spbc-scanner.php');
@@ -860,6 +862,10 @@ function spbc_settings__register()
                                         SPBC_PLUGIN_DIR . 'backups' . DIRECTORY_SEPARATOR
                                     )
                             ),
+                            'action_adjust'        => array(
+                                'type'     => 'field',
+                                'callback' => 'spbc_settings_field__action_adjust',
+                            ),
                             'monitoring__users'                          => array(
                                 'type'       => 'field',
                                 'input_type' => 'hidden',
@@ -922,6 +928,25 @@ function spbc_settings__register()
                 'class_prefix' => 'spbc',
                 'ajax'         => false,
                 'callback'     => 'spbc_tab__summary',
+            ),
+            // Critical updates
+            'critical_updates'          => array(
+                'type'         => 'tab',
+                'title'        => __('Critical updates', 'security-malware-firewall'),
+                'icon'         => 'spbc-icon-info',
+                'class_prefix' => 'spbc',
+                'ajax'         => true,
+                'sections'     => array(
+                    'critical_updates_section' => array(
+                        'type'   => 'section',
+                        'fields' => array(
+                            'scanner' => array(
+                                'type'     => 'field',
+                                'callback' => 'spbc_tab__critical_updates'
+                            ),
+                        ),
+                    ),
+                ),
             ),
             // FSWatcher
             'fswatcher'          => array(
@@ -1495,6 +1520,28 @@ function spbc_tab__summary()
     echo '<br>';
     echo $spbc->data["wl_brandname"] . __(' is a registered trademark. All rights reserved.', 'security-malware-firewall');
     echo '<br><br>';
+    echo '</div>';
+}
+
+function spbc_tab__critical_updates()
+{
+    global $spbc;
+
+    echo "<div class='spbc_wrapper_field'>";
+
+    /**
+     * Check if tab is restricted by license, layout according HTML if so.
+     */
+    $feature_state = $spbc->feature_restrictions->getState($spbc, 'critical_updates');
+
+    if (false === $feature_state->is_active) {
+        echo $feature_state->sanitizedReasonOutput();
+        echo '</div>';
+        return;
+    }
+
+    echo VulnerabilityAlarmView::renderSettingsTab();
+
     echo '</div>';
 }
 
@@ -2637,6 +2684,12 @@ function spbc_field_scanner__prepare_data__analysis_log(&$table)
                 $analysis_comment = __('Processing: queue is full. File will be resent in 5 minutes.', 'security-malware-firewall');
             }
 
+            if ( !is_null($row->pscan_estimated_execution_time) ) {
+                $estimated_execution_time = $row->pscan_estimated_execution_time . ' ' . __('second(s)', 'security-malware-firewall');
+            } else {
+                $estimated_execution_time = $row->pscan_processing_status === 'DONE' ? 'Done' : 'Wait for assessing';
+            }
+
             // Filter actions for approved files
             if ( in_array($row->pscan_status, array('SAFE','DANGEROUS')) || $curr_time - $row->last_sent < 500 ) {
                 unset($row->actions['check_analysis_status']);
@@ -2657,6 +2710,7 @@ function spbc_field_scanner__prepare_data__analysis_log(&$table)
                 'last_sent'        => is_numeric($row->last_sent) ? date('M j, Y, H:i:s', $row->last_sent) : null,
                 'pscan_status'  => $pscan_status,
                 'analysis_comment' => $analysis_comment,
+                'pscan_estimated_execution_time' => $estimated_execution_time,
                 'actions'          => $row->actions,
             );
         }
@@ -3065,6 +3119,85 @@ function spbc_field_scanner()
     echo '</div>';
 }
 
+add_action('wp_ajax_spbc_analysyis_files_stats__get_html', 'spbc__analysyis_files_stats__get_html');
+/**
+ * Retrieves HTML code block to layout files counters stats in the analysis accordion.
+ * @return string
+ */
+function spbc__analysyis_files_stats__get_html()
+{
+    spbc_check_ajax_referer('spbc_secret_nonce', 'security');
+
+    $out = '
+    <div id="spbc_analysis_files_stats" style="display: block; padding-bottom: 5px">
+        <p>%s</p>
+        <p>%s: %d / %d / %d</p>
+        %s
+    </div>
+    ';
+    $caption = __('List of files sent for the Cloud analysis, it takes up to 10 minutes to process a file. Refresh the page to have the results.', 'security-malware-firewall');
+    $files_stats_string = __('Files sent/checked/unchecked', 'security-malware-firewall');
+    $data = spbc__analysyis_files_stats__get_data();
+    $last_updated_chunk = __('Files statuses updates every', 'security-malware-firewall')  . ' ' . SPBC_PSCAN_UPDATE_FILES_STATUS_PERIOD . ' seconds';
+    $last_updated_chunk .= '<span id="spbc_last_update_time">';
+    $last_updated_chunk .= $data['last_updated'] && is_int($data['last_updated'])
+        ? ', ' . __('last update time', 'security-malware-firewall') . ': ' . date("M d Y H:i:s", $data['last_updated'])
+        : '.';
+    $last_updated_chunk .= '</span>';
+    $out = sprintf(
+        $out,
+        $caption,
+        $files_stats_string,
+        $data['files_sent_count'],
+        $data['files_checked_count'],
+        $data['files_unchecked_count'],
+        $last_updated_chunk
+    );
+
+    if (Post::get('sub_action') === 'give_me_html') {
+        echo $out;
+        exit;
+    }
+
+    return $out;
+}
+
+/**
+ * Retrieves the data for analysis stats block.
+ * @return array
+ */
+function spbc__analysyis_files_stats__get_data()
+{
+    global $wpdb, $spbc;
+    $out = array(
+            'files_sent_count' => 'N/D',
+            'files_checked_count' => 'N/D',
+            'files_unchecked_count' => 'N/D',
+            'last_updated' => false,
+    );
+    $files_sent_count = $wpdb->get_var('
+        SELECT COUNT(*) from ' . SPBC_TBL_SCAN_FILES . '
+        WHERE last_sent IS NOT NULL;
+    ');
+    $files_checked_count = $wpdb->get_var('
+        SELECT COUNT(*) from ' . SPBC_TBL_SCAN_FILES . '
+        WHERE last_sent IS NOT NULL AND pscan_processing_status = \'DONE\';
+    ');
+    $files_unchecked_count = !is_null($files_sent_count) && !is_null($files_checked_count)
+        ? (int)$files_sent_count - (int)$files_checked_count
+        : false;
+    $last_updated = \CleantalkSP\SpbctWP\Cron::getTask('scanner_update_pscan_files_status');
+    //next call checking is a trick - the last_call key does not work properly
+    $last_updated = $last_updated && !empty($last_updated['next_call'])
+        ? $last_updated['next_call'] - $last_updated['period'] + $spbc->data['site_utc_offset_in_seconds']
+        : false;
+    $out['files_sent_count'] = !is_null($files_sent_count) ? (int)$files_sent_count : $out['files_sent_count'];
+    $out['files_checked_count'] = !is_null($files_checked_count) ? (int)$files_checked_count : $out['files_checked_count'];
+    $out['files_unchecked_count'] = $files_unchecked_count ? : $out['files_unchecked_count'];
+    $out['last_updated'] = $last_updated ? : $out['last_updated'];
+    return $out;
+}
+
 function spbc_field_scanner__show_accordion($direct_call = false)
 {
     if ( ! $direct_call) {
@@ -3079,8 +3212,7 @@ function spbc_field_scanner__show_accordion($direct_call = false)
         '<a href="https://cleantalk.org/my/support/open?subject=Cloud%20Malware%20scanner,%20results%20question" target="_blank">',
         '</a>'
     ) : '';
-    $analysis_log_description = '<div>' .
-        __('List of files sent for the Cloud analysis, it takes up to 10 minutes to process a file. Refresh the page to have the results.', 'security-malware-firewall') .
+    $analysis_log_description = spbc__analysyis_files_stats__get_html() .
         '<div id="spbc_notice_cloud_analysis_feedback" class="notice is-dismissible">' .
         '<p>' .
         '<img src="' . SPBC_PATH . '/images/att_triangle.png" alt="attention" style="margin-bottom:-1px">' .
@@ -3088,7 +3220,6 @@ function spbc_field_scanner__show_accordion($direct_call = false)
         __('If you feel that the Cloud verdict is incorrect, please click the link "Copy file info" near the file name and contact us', 'security-malware-firewall') . ' ' .
         $dashboard_link .
         '</p>' .
-        '</div>' .
         '</div>';
     if ($spbc->data['display_scanner_warnings']['analysis'] && !$spbc->data['wl_mode_enabled']) {
         $analysis_log_description .= spbc__get_accordion_tab_info_block_html('analysis');
@@ -3600,21 +3731,23 @@ function spbc_list_table__get_args_by_type($table_type)
                             'pscan_processing_status',
                             'fast_hash',
                             'pscan_status',
-                            'pscan_pending_queue'
+                            'pscan_pending_queue',
+                            'pscan_estimated_execution_time'
                         ),
                         'where' => spbc_get_sql_where_addiction_for_table_of_category('analysis_log'),
                     ),
                     'order_by'          => array('pscan_status' => 'desc'),
-                    'sortable'          => array('path', 'last_sent', 'pscan_status'),
+                    'sortable'          => array('path', 'last_sent', 'pscan_status', 'pscan_estimated_execution_time'),
                 )
             );
 
             $args['columns']      = array(
                 'cb'                => array('heading' => '<input type=checkbox>', 'class' => 'check-column', 'width_percent' => 2),
-                'path'              => array('heading' => 'Path', 'primary' => true, 'width_percent' => 38),
+                'path'              => array('heading' => 'Path', 'primary' => true, 'width_percent' => 28),
                 'detected_at'       => array('heading' => 'Detected at', 'width_percent' => 15),
                 'last_sent'         => array('heading' => 'Sent for analysis at', 'width_percent' => 15),
                 'pscan_status'      => array('heading' => 'Cloud verdict', 'width_percent' => 10),
+                'pscan_estimated_execution_time' => array('heading' => 'Estimated time', 'width_percent' => 10),
                 //'analysis_comment'  => array('heading' => 'Comment', 'width_percent' => 20),
             );
 
@@ -5196,7 +5329,6 @@ function spbc_cdn_checker__run_check_on_settings_change($settings)
     }
 }
 
-
 /**
  *
  */
@@ -5225,6 +5357,14 @@ function spbc_settings_field__action_shuffle_salts()
         </button>
     </div>
     <?php
+}
+
+/**
+ * @return void
+ */
+function spbc_settings_field__action_adjust()
+{
+    echo AdjustToEnvironmentSettings::render();
 }
 
 function spbc_settings_field__secfw__get_ip__get_description()

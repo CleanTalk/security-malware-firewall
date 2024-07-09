@@ -13,7 +13,7 @@ class Repository
             . SPBC_TBL_SCAN_RESULTS_LOG
             . ' (timestamp, content) VALUES'
             . ' (%d, %s);',
-            array(time(), wp_kses($content, '<b>'))
+            array(time(), spbc_wp_kses($content, '<b>'))
         )->execute();
     }
 

@@ -28,6 +28,7 @@ class FeatureRestrictionService
         $restrictions[] = new FeatureRestriction('scanner', true, true);
         $restrictions[] = new FeatureRestriction('security_log', true, true);
         $restrictions[] = new FeatureRestriction('fswatcher', true, true);
+        $restrictions[] = new FeatureRestriction('critical_updates', true, true);
         $restrictions[] = new FeatureRestriction('backups', true, true);
         return $restrictions;
     }
