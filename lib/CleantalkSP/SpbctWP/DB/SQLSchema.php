@@ -111,6 +111,7 @@ class SQLSchema extends \CleantalkSP\Common\DB\SQLSchema
                 array('field' => 'pscan_pending_queue', 'type' => 'SMALLINT', 'null' => 'yes', 'default' => 'NULL',),
                 array('field' => 'pscan_balls', 'type' => 'varchar(1024)', 'null' => 'yes', 'default' => 'NULL',),
                 array('field' => 'pscan_file_id', 'type' => 'varchar(32)', 'null' => 'yes', 'default' => 'NULL',),
+                array('field' => 'pscan_estimated_execution_time', 'type' => 'int', 'null' => 'yes', 'default' => 'NULL',),
 
             ),
             'indexes' => array(

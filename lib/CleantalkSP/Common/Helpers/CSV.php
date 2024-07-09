@@ -31,6 +31,27 @@ class CSV
     }
 
     /**
+     * Parse Comma-separated values, without formatting to csv
+     *
+     * @param $buffer
+     *
+     * @return false|string[]
+     */
+    public static function parseCSVLite($buffer)
+    {
+        $buffer = explode("\n", $buffer);
+        $buffer = self::sanitizeFromEmptyLines($buffer);
+
+        foreach ($buffer as &$line) {
+            if ($line !== '') {
+                $line = substr($line, 6);
+            }
+        }
+
+        return $buffer;
+    }
+
+    /**
      * Parse Comma-separated values
      *
      * @param $buffer

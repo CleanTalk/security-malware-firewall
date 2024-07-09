@@ -119,58 +119,37 @@ class Helper
      * @param string $type Type - approved/rejected
      * @param string $version
      *
-     * @return array Array with all files hashes or Error Array
+     * @return false|string[]|non-empty-array<array-key, string> Array with all files hashes or Error Array
      */
     public static function getHashesForFiles($cms, $type, $version)
     {
         $file_path = 'https://cleantalk-security.s3-us-west-2.amazonaws.com/extensions_checksums/' . $cms . '/' . $type . '/' . $version . '.csv.gz';
 
-        if ( HTTP::getResponseCode($file_path) === 200 ) {
-            $gz_data = HTTP::getContentFromURL($file_path, false);
-            if ( empty($gz_data['error']) ) {
-                if ( function_exists('gzdecode') ) {
-                    $data = gzdecode($gz_data);
+        if ( HTTP::getResponseCode($file_path) !== 200 ) {
+            return array('error' => 'REMOTE_FILE_NOT_FOUND');
+        }
 
-                    if ( $data !== false ) {
-                        $lines = CSV::parseCSV($data);
-
-                        if ( count($lines) > 0 ) {
-                            $result = array();
-
-                            foreach ( $lines as $hash_info ) {
-                                if ( empty($hash_info) ) {
-                                    continue;
-                                }
-
-                                preg_match('/.*\.(\S*)$/', $hash_info[0], $matches);
-                                $ext = isset($matches[1]) ? $matches[1] : '';
-                                if ( ! in_array($ext, array('php', 'html')) ) {
-                                    continue;
-                                }
-
-                                $result[] = $hash_info;
-                            }
-
-                            if ( count($result) ) {
-                                return $result;
-                            }
-
-                            return array('error' => 'BAD_HASHES_FILE');
-                        }
-
-                        return array('error' => 'Empty hashes file');
-                    }
-
-                    return array('error' => 'COULDNT_UNPACK');
-                }
-
-                return array('error' => 'Function gzdecode not exists. Please update your PHP to version 5.4');
-            }
-
+        $gz_data = HTTP::getContentFromURL($file_path, false);
+        if ( !empty($gz_data['error']) ) {
             return (array) $gz_data;
         }
 
-        return array('error' => 'REMOTE_FILE_NOT_FOUND');
+        if ( !function_exists('gzdecode') ) {
+            return array('error' => 'Function gzdecode not exists. Please update your PHP to version 5.4');
+        }
+
+        $data = gzdecode($gz_data);
+        if ( $data === false ) {
+            return array('error' => 'COULDNT_UNPACK');
+        }
+
+        /** @psalm-suppress UndefinedMethod */
+        $lines = CSV::parseCSVLite($data);
+        if ( count($lines) < 1 ) {
+            return array('error' => 'Empty hashes file');
+        }
+
+        return $lines;
     }
 
     /**

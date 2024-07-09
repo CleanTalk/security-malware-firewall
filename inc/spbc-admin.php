@@ -1,5 +1,6 @@
 <?php
 
+use CleantalkSP\SpbctWP\AdjustToEnvironmentModule\AdjustToEnvironmentHandler;
 use CleantalkSP\SpbctWP\Cron;
 use CleantalkSP\SpbctWP\Scanner\Cure;
 use CleantalkSP\SpbctWP\Escape;
@@ -214,9 +215,9 @@ function spbc_plugin_list_show_vulnerability($plugin_file, $plugin_data, $_statu
     if ($do_show) {
         $plugin_slug = isset($plugin_data['slug']) ? $plugin_data['slug'] : sanitize_title($plugin_data['Name']);
         $plugin_version = ! empty($plugin_data['Version']) ? $plugin_data['Version'] : '';
-        $plugin_report = VulnerabilityAlarm::checkPluginVulnerability($plugin_slug, $plugin_version);
+        $plugin_report = VulnerabilityAlarm::checkPluginVulnerabilityStatic($plugin_slug, $plugin_version);
         if ( $plugin_report ) {
-            echo VulnerabilityAlarm::showAlarm($plugin_file, $plugin_report);
+            echo VulnerabilityAlarm::getPluginAlarmHTML($plugin_file, $plugin_report);
         }
     }
 }
@@ -230,17 +231,18 @@ function spbc_plugin_install_show_safety($res, $action, $_args)
         $spbc->settings['vulnerability_check__test_before_install'] == true
     );
     if ($do_show && $action === 'query_plugins' && ! ($res instanceof WP_Error) && is_array($res->plugins) && count($res->plugins) ) {
-        $safe_plugins = VulnerabilityAlarm::getSafePlugins($res->plugins);
-
-        if ( $safe_plugins ) {
-            add_filter('plugin_install_action_links', function ($action_links, $plugin) use ($safe_plugins) {
-                $plugin_slug = $safe_plugins['slug'];
-                $plugin_id = $safe_plugins['id'];
-                if ( $plugin['slug'] === $plugin_slug) {
-                    $action_links[] = VulnerabilityAlarm::showSafeBadge('', $plugin['slug'], $plugin_id);
-                }
-                return $action_links;
-            }, 10, 2);
+        $safe_plugins = VulnerabilityAlarm::getSafePluginsViaAPI($res->plugins);
+        if ( !empty($safe_plugins) ) {
+            foreach ($safe_plugins as $safe_plugin_data) {
+                add_filter('plugin_install_action_links', function ($action_links, $plugin) use ($safe_plugin_data) {
+                    $plugin_slug = $safe_plugin_data['slug'];
+                    $plugin_id = $safe_plugin_data['id'];
+                    if ( $plugin['slug'] === $plugin_slug) {
+                        $action_links[] = VulnerabilityAlarm::showSafeBadge('', $plugin['slug'], $plugin_id);
+                    }
+                    return $action_links;
+                }, 10, 2);
+            }
         }
     }
     return $res;
@@ -254,19 +256,25 @@ function spbc_theme_list_show_vulnerability()
     try {
         if (isset($_POST['list'])) {
             $list = $_POST['list'];
-            $safe_themes = VulnerabilityAlarm::checkThemeVulnerability($list);
+
+            $vulnerable_themes_reports = VulnerabilityAlarm::getVulnerableThemesViaAPI($list);
 
             $data = [
                 'success' => true,
-                'msg' => VulnerabilityAlarm::showThemeAlarm(),
                 'list' => [],
             ];
-            foreach ($list as $theme) {
-                if (in_array($theme, $safe_themes)) {
-                    $data['list'][] = $theme;
+
+            foreach ($list as $installed_theme) {
+                foreach ($vulnerable_themes_reports as $report) {
+                    if (isset($installed_theme['slug']) && $installed_theme['slug'] === $report->slug) {
+                        $vulnerable_theme_data = array(
+                                'slug' => $installed_theme['slug'],
+                                'msg' => VulnerabilityAlarm::getThemeAlarmHTML($report)
+                        );
+                        $data['list'][] = $vulnerable_theme_data;
+                    }
                 }
             }
-
             wp_send_json($data);
         }
     } catch (\Exception $_exception) {
@@ -282,19 +290,25 @@ function spbc_themes_install_show_safety()
     try {
         if (isset($_POST['list'])) {
             $list = $_POST['list'];
-            $safe_themes = VulnerabilityAlarm::getSafeThemes($list);
+            $safe_themes_reports = VulnerabilityAlarm::getSafeThemesViaApi($list);
 
             $data = [
                 'success' => true,
-                'msg' => VulnerabilityAlarm::showSafeBadge('theme'),
                 'list' => [],
             ];
-            foreach ($list as $theme) {
-                if (in_array($theme, $safe_themes)) {
-                    $data['list'][] = $theme;
+
+            foreach ($list as $installed_theme) {
+                foreach ($safe_themes_reports as $report) {
+                    if (isset($installed_theme['slug']) && $installed_theme['slug'] === $report->slug) {
+                        $theme_id = !empty($installed_theme['slug']) ? $installed_theme['slug'] : '';
+                        $safe_theme_data = array(
+                            'slug' => $installed_theme['slug'],
+                            'msg' => VulnerabilityAlarm::showSafeBadge('theme', $installed_theme['slug'], $theme_id)
+                        );
+                        $data['list'][] = $safe_theme_data;
+                    }
                 }
             }
-
             wp_send_json($data);
         }
     } catch (\Exception $_exception) {
@@ -501,11 +515,23 @@ function spbc_enqueue_scripts($hook)
 
         wp_localize_script('spbc-settings-js', 'spbcTable', array(
             'warning_bulk'       => __('Are sure you want to perform these actions?', 'security-malware-firewall'),
+
             'warning_default'    => __('Do you want to proceed?', 'security-malware-firewall'),
-            'warning_send'       => __('The file will be sent in the Cloud to analyze for a malware, usually processing takes up to 1 minute. The result will be shown in the Analysis log.', 'security-malware-firewall'),
-            'warning_delte'      => __('This can\'t be undone and could damage your website. Are you sure?', 'security-malware-firewall'),
-            'warning_replace'    => __('This can\'t be undone. Are you sure?', 'security-malware-firewall'),
-            'warning_quarantine' => __('This can\'t be undone and could damage your website. Are you sure?', 'security-malware-firewall'),
+
+            'warning_h_approve'    => __('Do you want to approve this file?', 'security-malware-firewall'),
+            'warning_t_approve'    => __('If you agree, the file {filePath} will be approved', 'security-malware-firewall'),
+
+            'warning_h_send'       => __('Do you want to proceed?', 'security-malware-firewall'),
+            'warning_t_send'    => __('The file {filePath} will be sent in the Cloud to analyze for a malware, usually processing takes up to 1 minute. The result will be shown in the Analysis log.', 'security-malware-firewall'),
+
+            'warning_h_delete'      => __('This can\'t be undone and could damage your website. Are you sure?', 'security-malware-firewall'),
+            'warning_t_delete'    => __('If you agree, the file {filePath} will be deleted', 'security-malware-firewall'),
+
+            'warning_h_replace'    => __('This can\'t be undone. Are you sure?', 'security-malware-firewall'),
+            'warning_t_replace'    => __('If you agree, the file {filePath} will be replaced', 'security-malware-firewall'),
+
+            'warning_h_quarantine' => __('This can\'t be undone and could damage your website. Are you sure?', 'security-malware-firewall'),
+            'warning_t_quarantine'    => __('If you agree, the file {filePath} will be quarantined', 'security-malware-firewall'),
         ));
 
         // Getting scanner settings
@@ -891,6 +917,38 @@ function spbc_action_shuffle_salts()
 
     //drop spbc_is_logged_in cookie to prevent ЕС and BFP incorrect work
     Cookie::set('spbc_is_logged_in', '0', time() - 30, '/');
+
+    wp_send_json_success();
+}
+
+add_action('wp_ajax_spbc_action_adjust_change', 'spbc_action_adjust_change');
+
+function spbc_action_adjust_change()
+{
+    spbc_check_ajax_referer('spbc_secret_nonce', 'security');
+
+    if (in_array(Post::get('adjust'), array_keys(AdjustToEnvironmentHandler::SET_OF_ADJUST))) {
+        $adjust = Post::get('adjust');
+        $adjust_class = AdjustToEnvironmentHandler::SET_OF_ADJUST[$adjust];
+        $adjust_handler = new AdjustToEnvironmentHandler();
+        $adjust_handler->handleOne($adjust_class);
+    }
+
+    wp_send_json_success();
+}
+
+add_action('wp_ajax_spbc_action_adjust_reverse', 'spbc_action_adjust_reverse');
+
+function spbc_action_adjust_reverse()
+{
+    spbc_check_ajax_referer('spbc_secret_nonce', 'security');
+
+    if (in_array(Post::get('adjust'), array_keys(AdjustToEnvironmentHandler::SET_OF_ADJUST))) {
+        $adjust = Post::get('adjust');
+        $adjust_class = AdjustToEnvironmentHandler::SET_OF_ADJUST[$adjust];
+        $adjust_handler = new AdjustToEnvironmentHandler();
+        $adjust_handler->reverseAdjust($adjust_class);
+    }
 
     wp_send_json_success();
 }
