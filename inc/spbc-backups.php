@@ -114,7 +114,8 @@ function spbc_backup__files_with_signatures($direct_call = false)
                     // Adding new backup
                     $wpdb->insert(SPBC_TBL_BACKUPS, array('type' => 'SIGNATURES', 'datetime' => date('Y-m-d H:i:s')));
                     $backup_id = $wpdb->insert_id;
-
+                    $spbc->data['scanner']['last_backup'] = $backup_id;
+                    $spbc->save('data');
                     $dir_name = SPBC_PLUGIN_DIR . 'backups/';
                     if ( ! is_dir($dir_name)) {
                         mkdir($dir_name);
@@ -141,6 +142,8 @@ function spbc_backup__files_with_signatures($direct_call = false)
             }
         }
 
+        $backup_id = isset($backup_id) ? $backup_id : $spbc->data['scanner']['last_backup'];
+
         // Writing backuped files to DB
         if ( ! empty($sql_data) && ! isset($output['error'])) {
             if ($wpdb->query($sql_query . implode(',', $sql_data) . ';') !== false) {
@@ -148,9 +151,6 @@ function spbc_backup__files_with_signatures($direct_call = false)
                 if ($wpdb->update(SPBC_TBL_BACKUPS, array('status' => 'BACKUPED'), array('backup_id' => $backup_id)) !== false) {
                     $result = spbc_backup__rotate('signatures');
                     if (empty($result['error'])) {
-                        $spbc->data['scanner']['last_backup'] = $backup_id;
-                        $spbc->save('data');
-
                         $output = array('success' => true);
                     } else {
                         $output = array('error' => 'BACKUP_ROTATE: ' . substr($result['error'], 0, 1024));

@@ -230,9 +230,38 @@ class HeuristicAnalyser
         $this->evaluations     = new Evaluations($this->tokens, $this->variables, $this->includes, $this->sqls);
         $this->code_style      = new CodeStyle($this->tokens);
 
-        if ( isset($input['path']) && version_compare(PHP_VERSION, '8.1', '>=') && extension_loaded('mbstring') ) {
-            // Do not run entropy analysis on included constructs
-            $this->entropyAnalyser = new Entropy($input['path']);
+        $currentMemoryLimit = ini_get('memory_limit');
+        $currentMemoryLimitBytes =  $this->convertToBytes($currentMemoryLimit);
+        $compareValueBytes = $this->convertToBytes('256M');
+
+        if ($currentMemoryLimitBytes >= $compareValueBytes) {
+            if ( isset($input['path']) && version_compare(PHP_VERSION, '8.1', '>=') && extension_loaded('mbstring') ) {
+                // Do not run entropy analysis on included constructs
+                $this->entropyAnalyser = new Entropy($input['path']);
+            }
+        }
+    }
+
+    public function convertToBytes($value)
+    {
+        if (is_string($value) && $value !== "-1") {
+            $value = trim($value);
+            $prefix = strtolower(substr($value, - 1, 1));
+            $number = substr($value, 0, - 1);
+            switch ($prefix) {
+                case 'k':
+                    $value = (int)$number * 1024;
+                    break;
+                case 'm':
+                    $value = (int)$number * 1024 * 1024;
+                    break;
+                case 'g':
+                    $value = (int)$number * 1024 * 1024 * 1024;
+                    break;
+                default:
+                    $value = (int)$value;
+            }
+            return $value;
         }
     }
 
@@ -293,7 +322,7 @@ class HeuristicAnalyser
                 $this->extension !== 'shtml' &&
                 $this->extension !== 'js'
             ) {
-                $this->code_style->analyseLineLengths($this->file_content);
+                //$this->code_style->analyseLineLengths($this->file_content);
                 $this->code_style->analyseHumanUnreadableCode($this->file_content);
                 $this->code_style->analyseWeightOfNoise($this->file_content);
             }
