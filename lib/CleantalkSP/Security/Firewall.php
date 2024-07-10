@@ -153,7 +153,7 @@ class Firewall
         }
 
         // Do finish action - die or set cookies
-        if ( isset($result->module) ) {
+        if ( isset($result->module) && isset($this->fw_modules[$result->module]) ) {
             // Blocked
             if ( strpos($result->status, 'DENY') !== false ) {
                 $this->fw_modules[$result->module]->actionsForDenied($result);

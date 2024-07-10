@@ -557,4 +557,18 @@ class RemoteCalls extends \CleantalkSP\Common\RemoteCalls
             : 'FAIL ' . json_encode($result_cdn_check['error'])
         );
     }
+
+    /**
+     * @psalm-suppress PossiblyUnusedMethod
+     */
+    public static function action__launch_background_scan() // phpcs:ignore PSR1.Methods.CamelCapsMethodName.NotCamelCaps
+    {
+        $result = spbc_scanner__launch();
+
+        die(
+            empty($result['error'])
+            ? 'OK '
+            : 'FAIL ' . json_encode($result['error'])
+        );
+    }
 }
