@@ -4,6 +4,7 @@ namespace CleantalkSP\SpbctWP\AdminBannersModule\AdminBanners;
 
 use CleantalkSP\Common\Helpers\Helper;
 use CleantalkSP\SpbctWP\AdminBannersModule\AdminBannersHandler;
+use CleantalkSP\SpbctWP\LinkConstructor;
 
 class AdminBannerRenew extends AdminBannerAbstract
 {
@@ -35,17 +36,16 @@ class AdminBannerRenew extends AdminBannerAbstract
 
         $this->banners_handler = $banners_handler;
         $this->banner_id       = $this->prefix . $this::NAME . '_' . $this->banners_handler->getUserId();
-
-        $utm_marks = '&utm_source=wp-backend&utm_medium=cpc&utm_campaign=WP%%20backend%%20trial_security';
-        $link = 'https://p.cleantalk.org/?featured=&product_id=4&user_token=' . $banners_handler->getUserToken() . $utm_marks;
-
+        $renewal_link_tag = linkConstructor::buildRenewalLinkATag(
+            $banners_handler->getUserToken() ?: '',
+            '<input type="button" class="button button-primary" value="'
+            . esc_html__('RENEW', 'security-malware-firewall')
+            . '" />',
+            4,
+            'renew_notice_renew'
+        );
         $this->template_data = array(
-            'button' => '<input type="button" class="button button-primary" value="'
-                        . esc_html__('RENEW', 'security-malware-firewall')
-                        . '" />',
-            'link' => $spbc->data["wl_mode_enabled"]
-                ? $spbc->data["wl_url"]
-                : $link,
+            'link_tag' => $renewal_link_tag,
             'plugin_settings_link' => $this->banners_handler->getPluginSettingsLink(),
             'title'                => esc_html__('Please renew your security license.', 'security-malware-firewall'),
             'subtitle'             => esc_html__('Account status updates every hour or click Settings -> ' . $spbc->data["wl_brandname"] . ' -> Synchronize with Cloud.', 'security-malware-firewall'),
@@ -59,6 +59,7 @@ class AdminBannerRenew extends AdminBannerAbstract
      */
     protected function needToShow()
     {
+
         if (
             $this->banners_handler->spbc->notice_show &&
             $this->banners_handler->spbc->notice_renew &&
@@ -87,11 +88,7 @@ class AdminBannerRenew extends AdminBannerAbstract
             <h4 style="color: gray;"><?php
                 echo $data['subtitle']; ?></h4>
             <p>
-                <a target="_blank" style="vertical-align: super;" href="<?php
-                echo $data['link']; ?>">
-                    <?php
-                    echo $data['button']; ?>
-                </a>
+                <?php echo $data['link_tag']; ?>
             </p>
         </div>
         <?php
