@@ -2,7 +2,7 @@
 Contributors: glomberg, alexandergull, sergefcleantalk
 Tags: security, firewall, malware, wordpress security, brute force
 Requires at least: 3.0
-Tested up to: 6.5
+Tested up to: 6.6
 Requires PHP: 5.6
 Stable tag: 2.137
 License: GPLv2
