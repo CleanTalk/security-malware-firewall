@@ -3,6 +3,7 @@
 namespace CleantalkSP\SpbctWP\AdminBannersModule\AdminBanners;
 
 use CleantalkSP\SpbctWP\AdminBannersModule\AdminBannersHandler;
+use CleantalkSP\SpbctWP\LinkConstructor;
 use CleantalkSP\Variables\Get;
 
 class AdminBannerTrial extends AdminBannerAbstract
@@ -42,25 +43,25 @@ class AdminBannerTrial extends AdminBannerAbstract
 
         $this->banners_handler   = $banners_handler;
         $this->banner_id         = $this->prefix . $this::NAME . '_' . $this->banners_handler->getUserId();
-
-        $utm_marks = '&utm_source=wp-backend&utm_medium=cpc&utm_campaign=WP%%20backend%%20trial_security';
-        $link = 'https://p.cleantalk.org/?featured=&product_id=4&user_token=' . $banners_handler->getUserToken() . $utm_marks;
-
+        $renewal_link_tag = linkConstructor::buildRenewalLinkATag(
+            $banners_handler->getUserToken() ?: '',
+            '<input type="button" class="button button-primary" value="'
+            . esc_html__('UPGRADE', 'security-malware-firewall')
+            . '" />',
+            4,
+            'renew_notice_trial'
+        );
 
         $this->template_data = array(
-            'button' => '<input type="button" class="button button-primary" value="'
-                        . esc_html__('UPGRADE', 'security-malware-firewall')
-                        . '" />',
-            'link' => $spbc->data["wl_mode_enabled"]
-                ? $spbc->data["wl_support_url"]
-                : $link,
+            'link_tag' => $renewal_link_tag,
             'plugin_settings_link' => $this->banners_handler->getPluginSettingsLink(),
-            'title' => esc_html__(
+            'title'                => esc_html__(
                 'Trial period is now over, please upgrade to premium version to keep your site secure and safe!',
                 'security-malware-firewall'
             ),
-            'subtitle' => esc_html__('Account status updates every hour or click Settings -> ' . $spbc->data["wl_brandname"] . ' -> Synchronize with Cloud.', 'security-malware-firewall'),
+            'subtitle'             => esc_html__('Account status updates every hour or click Settings -> ' . $spbc->data["wl_brandname"] . ' -> Synchronize with Cloud.', 'security-malware-firewall'),
         );
+
         $this->is_settings_page = Get::get('page') === 'spbc';
     }
 
@@ -106,9 +107,7 @@ class AdminBannerTrial extends AdminBannerAbstract
                 <?php echo $data['subtitle']; ?>
             </h4>
             <p>
-                <a target="_blank" style="vertical-align: super;" href="<?php echo $data['link']; ?>">
-                    <?php echo $data['button']; ?>
-                </a>
+                <?php echo $data['link_tag']; ?>
             </p>
         <?php
         echo '</div>';
