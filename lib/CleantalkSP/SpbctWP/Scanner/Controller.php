@@ -3,6 +3,7 @@
 namespace CleantalkSP\SpbctWP\Scanner;
 
 use CleantalkSP\SpbctWP;
+use CleantalkSP\SpbctWP\Helpers\Data;
 
 class Controller
 {
@@ -105,6 +106,14 @@ class Controller
 
     public static function resetCheckResult()
     {
-        return SpbctWP\DB::getInstance()->execute('DELETE FROM ' . SPBC_TBL_SCAN_FILES);
+        SpbctWP\DB::getInstance()->execute('DELETE FROM ' . SPBC_TBL_SCAN_FILES);
+        SpbctWP\DB::getInstance()->execute('DELETE FROM ' . SPBC_TBL_BACKUPS);
+        SpbctWP\DB::getInstance()->execute('DELETE FROM ' . SPBC_TBL_BACKUPED_FILES);
+        SpbctWP\DB::getInstance()->execute('DELETE FROM ' . SPBC_TBL_CURE_LOG);
+        $backups_folder = SPBC_PLUGIN_DIR . DIRECTORY_SEPARATOR . 'backups';
+        if (is_dir($backups_folder) && is_writable($backups_folder)) {
+            Data::removeDirectoryRecursively($backups_folder);
+        }
+        return true;
     }
 }
