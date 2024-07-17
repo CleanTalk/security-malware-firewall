@@ -212,7 +212,7 @@ class Surface
                 if ( is_dir($path) ) {
                     // Directory names filter
                     foreach ( $this->dirs_except as $dir_except ) {
-                        if ( strpos($path, $dir_except) ) {
+                        if ( ! empty($dir_except) && strpos($path, $dir_except) ) {
                             continue(2);
                         }
                     }
@@ -328,7 +328,7 @@ class Surface
                 } elseif ( is_dir($path) ) {
                     // Directory names filter
                     foreach ( $this->dirs_except as $dir_except ) {
-                        if ( strpos($path, $dir_except) ) {
+                        if ( ! empty($dir_except) && strpos($path, $dir_except) ) {
                             continue(2);
                         }
                     }
