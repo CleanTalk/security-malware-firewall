@@ -144,8 +144,8 @@ class UpdaterScripts
 
     public static function updateTo_2_13_0() //phpcs:ignore PSR1.Methods.CamelCapsMethodName.NotCamelCaps
     {
-        update_option('spbc_plugins', array(), 'no');
-        update_option('spbc_themes', array(), 'no');
+        update_option('spbc_plugins', array(), false);
+        update_option('spbc_themes', array(), false);
     }
 
     public static function updateTo_2_14_0() //phpcs:ignore PSR1.Methods.CamelCapsMethodName.NotCamelCaps
@@ -1348,5 +1348,13 @@ class UpdaterScripts
         $sql_change_body_length =
             'ALTER TABLE ' . SPBC_TBL_SCAN_SIGNATURES . ' MODIFY body text NOT NULL';
         DB::getInstance()->execute($sql_change_body_length);
+    }
+
+    public static function updateTo_2_137_0() //phpcs:ignore PSR1.Methods.CamelCapsMethodName.NotCamelCaps
+    {
+        global $wpdb;
+
+        DB::getInstance()->execute('DROP TABLE IF EXISTS ' . $wpdb->prefix . 'spbc_important_files');
+        DB::getInstance()->execute('DROP TABLE IF EXISTS ' . $wpdb->prefix . 'spbc_important_file_snapshots');
     }
 }
