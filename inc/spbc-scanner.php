@@ -218,6 +218,204 @@ function spbc_scanner_links_get_scanned__domains($offset = 0, $amount = 20, $ord
     return $data;
 }
 
+/**
+ * Remove file from the database
+ * @param int $file_id
+ * @return bool
+ */
+function spbc_scanner_file_remove_from_log($file_id)
+{
+    global $wpdb;
+
+    return $wpdb->delete(SPBC_TBL_SCAN_FILES, array('fast_hash' => $file_id));
+}
+
+/**
+ * Send file to Cleantalk Cloud
+ * @param int $file_id
+ * @param bool $do_rescan
+ * @return array
+ */
+function spbc_scanner_file_send_handler($file_id = null, $do_rescan = true)
+{
+    global $spbc, $wpdb;
+
+    $root_path = spbc_get_root_path();
+
+    if (!$file_id) {
+        return array('error' => 'WRONG_FILE_ID');
+    }
+
+    // Getting file info.
+    $sql = 'SELECT fast_hash, path, source_type, source, source_status, version, mtime, weak_spots, full_hash, real_full_hash, status, checked_signatures, checked_heuristic
+        FROM ' . SPBC_TBL_SCAN_FILES . '
+        WHERE fast_hash = "' . $file_id . '"
+        LIMIT 1';
+    $sql_result = $wpdb->get_results($sql, ARRAY_A);
+    $file_info  = $sql_result[0];
+
+    if (empty($file_info)) {
+        return array('error' => 'FILE_NOT_FOUND');
+    }
+
+    if (!file_exists($root_path . $file_info['path'])) {
+        $res = spbc_scanner_file_remove_from_log($file_id);
+        if ($res === false) {
+            return array(
+                'error' => __('File not exists and must be removed from log, but something went wrong.', 'security-malware-firewall'),
+                'error_type' => 'FILE_NOT_EXISTS_DB_ERROR'
+            );
+        }
+
+        return array(
+            'error' => __('File not exists and will be removed from log.', 'security-malware-firewall'),
+            'error_type' => 'FILE_NOT_EXISTS'
+        );
+    }
+
+    if (!is_readable($root_path . $file_info['path'])) {
+        return array('error' => 'FILE_NOT_READABLE');
+    }
+
+    if (filesize($root_path . $file_info['path']) < 1) {
+        return array('error' => 'FILE_SIZE_ZERO');
+    }
+
+    if (filesize($root_path . $file_info['path']) > 1048570) {
+        return array('error' => 'FILE_SIZE_TOO_LARGE');
+    }
+
+    if ($file_info['status'] === 'APPROVED_BY_CT' || $file_info['status'] === 'APPROVED_BY_CLOUD') {
+        return array('error' => 'IT_IS_IMPOSIBLE_RESEND_APPROVED_FILE');
+    }
+
+    if ( $do_rescan ) {
+        // Scan file before send it
+        $rescan_results = spbc_scanner_rescan_single_file($file_info['path'], $file_info['full_hash'], $root_path);
+        if (isset($rescan_results['error'])) {
+            return array('error' => $rescan_results['error']);
+        }
+
+        $merged_result = $rescan_results['merged_result'];
+
+        //prepare weakspots for DTO
+        $file_info['weak_spots'] = $merged_result['weak_spots'];
+
+        //update file in the table
+        $wpdb->update(
+            SPBC_TBL_SCAN_FILES,
+            array(
+                'checked_signatures' => $file_info['checked_signatures'],
+                'checked_heuristic'  => $file_info['checked_heuristic'],
+                'status'             => $file_info['status'] === 'MODIFIED' ? 'MODIFIED' : $merged_result['status'],
+                'severity'           => $merged_result['severity'],
+                'weak_spots'         => json_encode($merged_result['weak_spots']),
+                'full_hash'          => md5_file($root_path . $file_info['path']),
+            ),
+            array('fast_hash' => $file_info['fast_hash']),
+            array('%s', '%s', '%s', '%s', '%s', '%s'),
+            array('%s')
+        );
+    }
+
+    // Updating file_info if file source is unknown
+    if ( ! isset($file_info['version'], $file_info['source'], $file_info['source_type'])) {
+        $file_info_updated = spbc_get_source_info_of($file_info['path']);
+        if ($file_info_updated) {
+            $file_info = array_merge($file_info, $file_info_updated);
+        }
+    }
+
+    // prepare file hash
+    $file_info['full_hash']  = md5_file($root_path . $file_info['path']);
+
+    // Getting file && API call
+    $file_content   = file_get_contents($root_path . $file_info['path']);
+    try {
+        $dto = new DTO\MScanFilesDTO(
+            array(
+                'path_to_sfile' => $file_info['path'],
+                'attached_sfile' => $file_content,
+                'md5sum_sfile' => $file_info['full_hash'],
+                'dangerous_code' => $file_info['weak_spots'],
+                'version' => $file_info['version'],
+                'source' => $file_info['source'],
+                'source_type' => $file_info['source_type'],
+                'source_status' => $file_info['source_status'],
+                'real_hash' => $file_info['real_full_hash'],
+                'client_php_version' => phpversion(),
+                'auto_send_type' => 'Suspicious',
+                'current_scanner_settings' => json_encode($spbc->settings),
+                'plugin_heuristic_checked' => $file_info['checked_heuristic'],
+                'plugin_signatures_checked' => $file_info['checked_signatures'],
+            )
+        );
+    } catch ( \InvalidArgumentException $e ) {
+        return array('error' => "File can not be send. Error: \n" . substr($e->getMessage(), 0, 100));
+    }
+
+    $api_response = SpbcAPI::method__security_pscan_files_send($spbc->settings['spbc_key'], $dto);
+
+    if (!empty($api_response['error'])) {
+        if ($api_response['error'] === 'QUEUE_FULL') {
+            //do something with not queued files
+            $sql_result = $wpdb->query(
+                'UPDATE ' . SPBC_TBL_SCAN_FILES
+                . ' SET'
+                . ' last_sent = ' . current_time('timestamp') . ','
+                . ' pscan_pending_queue = 1'
+                . ' WHERE fast_hash = "' . $file_id . '"'
+            );
+
+            if ($sql_result === false) {
+                return array('error' => 'DB_COULD_NOT_UPDATE pscan_pending_queue');
+            }
+
+            //set new cron to resend unqueued files
+            \CleantalkSP\SpbctWP\Cron::updateTask(
+                'scanner_resend_pscan_files',
+                'spbc_scanner_resend_pscan_files',
+                SPBC_PSCAN_RESEND_FILES_STATUS_PERIOD,
+                time() + SPBC_PSCAN_RESEND_FILES_STATUS_PERIOD
+            );
+
+            return array('success' => true, 'result' => $api_response);
+        } else {
+            //out API error if error is not queue_full
+            return $api_response;
+        }
+    }
+
+    if (!isset($api_response['file_id'])) {
+        return array('error' => 'API_RESPONSE: file_id is NULL');
+    }
+
+    // Updating "last_sent"
+    $sql_result = $wpdb->query(
+        'UPDATE ' . SPBC_TBL_SCAN_FILES
+        . ' SET'
+        . ' last_sent = ' . current_time('timestamp') . ','
+        . ' pscan_processing_status = "NEW",'
+        . ' pscan_pending_queue = 0,'
+        . ' pscan_file_id = "' . $api_response["file_id"] . '"'
+        . ' WHERE fast_hash = "' . $file_id . '"'
+    );
+
+    if ($sql_result === false) {
+        return array('error' => 'DB_COULDNT_UPDATE pscan_processing_status');
+    }
+
+    //set new cron to update statuses
+    \CleantalkSP\SpbctWP\Cron::updateTask(
+        'scanner_update_pscan_files_status',
+        'spbc_scanner_update_pscan_files_status',
+        SPBC_PSCAN_UPDATE_FILES_STATUS_PERIOD,
+        time() + SPBC_PSCAN_UPDATE_FILES_STATUS_PERIOD
+    );
+
+    return array('success' => true, 'result' => $api_response);
+}
+
 function spbc_scanner_file_send($direct_call = false, $file_id = null, $do_rescan = true)
 {
     if ( ! $direct_call) {
@@ -225,177 +423,7 @@ function spbc_scanner_file_send($direct_call = false, $file_id = null, $do_resca
         $file_id = preg_match('@[a-zA-Z0-9]{32}@', Post::get('file_id')) ? Post::get('file_id') : null;
     }
 
-    global $spbc, $wpdb;
-
-    $root_path = spbc_get_root_path();
-
-    if ($file_id) {
-        // Getting file info.
-        $sql        = 'SELECT fast_hash, path, source_type, source, source_status, version, mtime, weak_spots, full_hash, real_full_hash, status, checked_signatures, checked_heuristic
-			FROM ' . SPBC_TBL_SCAN_FILES . '
-			WHERE fast_hash = "' . $file_id . '"
-			LIMIT 1';
-        $sql_result = $wpdb->get_results($sql, ARRAY_A);
-        $file_info  = $sql_result[0];
-
-        if ($file_info['status'] === 'APPROVED_BY_CT' || $file_info['status'] === 'APPROVED_BY_CLOUD') {
-            $output = array('error' => 'IT_IS_IMPOSIBLE_RESEND_APPROVED_FILE');
-            if ( !$direct_call ) {
-                wp_send_json($output);
-            }
-            return $output;
-        }
-
-        if ( $do_rescan ) {
-            // Scan file before send it
-            $rescan_results = spbc_scanner_rescan_single_file($file_info['path'], $file_info['full_hash'], $root_path);
-            if (isset($rescan_results['error'])) {
-                //break process if any check is failed
-                $error = array('error' => $rescan_results['error']);
-                if ( !$direct_call ) {
-                    wp_send_json($error);
-                }
-                return $error;
-            }
-            $merged_result = $rescan_results['merged_result'];
-
-            //prepare weakspots for DTO
-            $file_info['weak_spots'] = $merged_result['weak_spots'];
-
-            //update file in the table
-            $wpdb->update(
-                SPBC_TBL_SCAN_FILES,
-                array(
-                    'checked_signatures' => $file_info['checked_signatures'],
-                    'checked_heuristic'  => $file_info['checked_heuristic'],
-                    'status'             => $file_info['status'] === 'MODIFIED' ? 'MODIFIED' : $merged_result['status'],
-                    'severity'           => $merged_result['severity'],
-                    'weak_spots'         => json_encode($merged_result['weak_spots']),
-                    'full_hash'          => md5_file($root_path . $file_info['path']),
-                ),
-                array('fast_hash' => $file_info['fast_hash']),
-                array('%s', '%s', '%s', '%s', '%s', '%s'),
-                array('%s')
-            );
-        }
-
-        if ( ! empty($file_info)) {
-            if (file_exists($root_path . $file_info['path'])) {
-                if (is_readable($root_path . $file_info['path'])) {
-                    if (filesize($root_path . $file_info['path']) > 0) {
-                        if (filesize($root_path . $file_info['path']) < 1048570) {
-                            // Updating file_info if file source is unknown
-                            if ( ! isset($file_info['version'], $file_info['source'], $file_info['source_type'])) {
-                                $file_info_updated = spbc_get_source_info_of($file_info['path']);
-                                if ($file_info_updated) {
-                                    $file_info = array_merge($file_info, $file_info_updated);
-                                }
-                            }
-
-                            // prepare file hash
-                            $file_info['full_hash']  = md5_file($root_path . $file_info['path']);
-
-                            // Getting file && API call
-                            $file_content   = file_get_contents($root_path . $file_info['path']);
-                            try {
-                                $dto = new DTO\MScanFilesDTO(
-                                    array(
-                                        'path_to_sfile' => $file_info['path'],
-                                        'attached_sfile' => $file_content,
-                                        'md5sum_sfile' => $file_info['full_hash'],
-                                        'dangerous_code' => $file_info['weak_spots'],
-                                        'version' => $file_info['version'],
-                                        'source' => $file_info['source'],
-                                        'source_type' => $file_info['source_type'],
-                                        'source_status' => $file_info['source_status'],
-                                        'real_hash' => $file_info['real_full_hash'],
-                                        'client_php_version' => phpversion(),
-                                        'auto_send_type' => 'Suspicious',
-                                        'current_scanner_settings' => json_encode($spbc->settings),
-                                        'plugin_heuristic_checked' => $file_info['checked_heuristic'],
-                                        'plugin_signatures_checked' => $file_info['checked_signatures'],
-                                    )
-                                );
-                            } catch ( \InvalidArgumentException $e ) {
-                                return array('error' => "File can not be send. Error: \n" . substr($e->getMessage(), 0, 100));
-                            }
-
-                            $api_response = SpbcAPI::method__security_pscan_files_send($spbc->settings['spbc_key'], $dto);
-
-                            if (empty($api_response['error'])) {
-                                if ($api_response['file_id']) {
-                                    // Updating "last_sent"
-                                    $sql_result = $wpdb->query(
-                                        'UPDATE ' . SPBC_TBL_SCAN_FILES
-                                        . ' SET'
-                                        . ' last_sent = ' . current_time('timestamp') . ','
-                                        . ' pscan_processing_status = "NEW",'
-                                        . ' pscan_pending_queue = 0,'
-                                        . ' pscan_file_id = "' . $api_response["file_id"] . '"'
-                                        . ' WHERE fast_hash = "' . $file_id . '"'
-                                    );
-                                    if ($sql_result !== false) {
-                                        $output = array('success' => true, 'result' => $api_response);
-                                        //set new cron to update statuses
-                                        \CleantalkSP\SpbctWP\Cron::updateTask(
-                                            'scanner_update_pscan_files_status',
-                                            'spbc_scanner_update_pscan_files_status',
-                                            SPBC_PSCAN_UPDATE_FILES_STATUS_PERIOD,
-                                            time() + SPBC_PSCAN_UPDATE_FILES_STATUS_PERIOD
-                                        );
-                                    //error on fail
-                                    } else {
-                                        $output = array('error' => 'DB_COULDNT_UPDATE pscan_processing_status');
-                                    }
-                                } else {
-                                    $output = array('error' => 'API_RESPONSE: file_id is NULL');
-                                }
-                            } else {
-                                if ($api_response['error'] === 'QUEUE_FULL') {
-                                    //do something with not queued files
-                                    $sql_result = $wpdb->query(
-                                        'UPDATE ' . SPBC_TBL_SCAN_FILES
-                                        . ' SET'
-                                        . ' last_sent = ' . current_time('timestamp') . ','
-                                        . ' pscan_pending_queue = 1'
-                                        . ' WHERE fast_hash = "' . $file_id . '"'
-                                    );
-                                    if ($sql_result !== false) {
-                                        $output = array('success' => true, 'result' => $api_response);
-                                        //set new cron to resend unqueued files
-                                        \CleantalkSP\SpbctWP\Cron::updateTask(
-                                            'scanner_resend_pscan_files',
-                                            'spbc_scanner_resend_pscan_files',
-                                            SPBC_PSCAN_RESEND_FILES_STATUS_PERIOD,
-                                            time() + SPBC_PSCAN_RESEND_FILES_STATUS_PERIOD
-                                        );
-                                    //error on fail
-                                    } else {
-                                        $output = array('error' => 'DB_COULD_NOT_UPDATE pscan_pending_queue');
-                                    }
-                                } else {
-                                    //out API error if error is not queue_full
-                                    $output = $api_response;
-                                }
-                            }
-                        } else {
-                            $output = array('error' => 'FILE_SIZE_TOO_LARGE');
-                        }
-                    } else {
-                        $output = array('error' => 'FILE_SIZE_ZERO');
-                    }
-                } else {
-                    $output = array('error' => 'FILE_NOT_READABLE');
-                }
-            } else {
-                $output = array('error' => 'FILE_NOT_EXISTS');
-            }
-        } else {
-            $output = array('error' => 'FILE_NOT_FOUND');
-        }
-    } else {
-        $output = array('error' => 'WRONG_FILE_ID');
-    }
+    $output = spbc_scanner_file_send_handler($file_id, $do_rescan);
 
     if ( !$direct_call ) {
         wp_send_json($output);
@@ -425,6 +453,7 @@ function spbc_scanner_file_send($direct_call = false, $file_id = null, $do_resca
 function spbc_scanner_rescan_single_file($file_path, $full_hash, $root_path)
 {
     global $wpdb;
+
     $out = array(
         'heuristic_result' => array(),
         'signatures_result' => array(),
@@ -1527,7 +1556,7 @@ function spbc_scanner_file_view($direct_call = false, $file_id = null)
                     $output = array('error' => 'FILE_NOT_READABLE');
                 }
             } else {
-                $output = array('error' => 'FILE_NOT_EXISTS');
+                $output = array('error' => 'File not exists and will be removed from log through next scan.');
             }
         } else {
             $output = array('error' => 'FILE_NOT_FOUND');
