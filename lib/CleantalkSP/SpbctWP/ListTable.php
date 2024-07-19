@@ -753,6 +753,27 @@ class ListTable
             }
         }
 
+        if ( isset($out['error'], $out['error_type']) && $out['error_type'] == 'FILE_NOT_EXISTS' ) {
+            $args  = spbc_list_table__get_args_by_type('analysis_log');
+            $table = new ListTable($args);
+            $table->getData();
+            $file_info_from_scan_results_table = $table->getTemplate();
+
+            $out = array(
+                'html'  => '<div class="spbc-popup-msg popup--red">'
+                                . $out['error']
+                                . '</div>',
+                'success'    => true,
+                'color'      => 'black',
+                'background' => 'rgba(110, 110, 240, 0.7)',
+            );
+
+            if ($file_info_from_scan_results_table) {
+                $out['updated_template'] = $file_info_from_scan_results_table;
+                $out['updated_template_type'] = 'analysis_log';
+            }
+        }
+
         wp_send_json($out);
     }
 
