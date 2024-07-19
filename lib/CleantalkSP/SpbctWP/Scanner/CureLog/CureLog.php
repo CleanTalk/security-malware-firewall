@@ -27,15 +27,13 @@ class CureLog
     }
 
     /**
-     * Clear cure log table
-     * @deprecated Since 2.125 - no need to run CuerLog clear. On deactivation
-     * the table will be deleted instead of clearing.
+     * Clear cure log table.
      * @return void
      * @psalm-suppress PossiblyUnusedMethod
      */
-    public function clearLogData()
+    public function clearLogDataFromFailedCures()
     {
-        $query = 'TRUNCATE TABLE ' . SPBC_TBL_CURE_LOG;
+        $query = 'DELETE FROM ' . SPBC_TBL_CURE_LOG . ' WHERE cured <> 1';
         $this->db->execute($query);
     }
 
