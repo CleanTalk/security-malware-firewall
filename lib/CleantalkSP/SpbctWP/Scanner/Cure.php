@@ -176,7 +176,7 @@ class Cure
     /**
      * @param $object
      * @param $actions
-     * @param $file
+     * @param $_file
      * @param $signature_id
      *
      * @return array|bool|int
@@ -202,13 +202,13 @@ class Cure
                         $file_content = $is_regexp
                             ? preg_replace(
                                 $object['code'],
-                                '// ' . $spbc->data["wl_brandname"] . ': Malware was deleted: #' . $signature_id,
+                                '/* ' . $spbc->data["wl_brandname"] . ': Malware was deleted: #' . $signature_id . '*/',
                                 $file_content,
                                 1
                             )
                             : str_replace(
                                 $object['code'],
-                                '// ' . $spbc->data["wl_brandname"] . ': Malware was deleted: #' . $signature_id,
+                                '/* ' . $spbc->data["wl_brandname"] . ': Malware was deleted: #' . $signature_id . '*/',
                                 $file_content
                             );
 
