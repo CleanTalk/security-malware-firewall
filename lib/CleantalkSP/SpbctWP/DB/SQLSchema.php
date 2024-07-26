@@ -261,6 +261,17 @@ class SQLSchema extends \CleantalkSP\Common\DB\SQLSchema
                 array('type' => 'PRIMARY', 'name' => 'KEY', 'body' => '(`fast_hash`)'),
             ),
         ),
+
+        'surface_completed_dirs' => array(
+            'columns' => array(
+                array('field' => 'id', 'type' => 'int unsigned', 'null' => 'no', 'extra' => 'AUTO_INCREMENT'),
+                array('field' => 'dir_path', 'type' => 'varchar(1024)', 'null' => 'no'),
+                array('field' => 'running_due_stage', 'type' => 'tinyint', 'null' => 'no'),
+            ),
+            'indexes' => array(
+                array('type' => 'PRIMARY', 'name' => 'KEY', 'body' => '(`id`)'),
+            ),
+        ),
     );
 
     /**
