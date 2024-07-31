@@ -144,9 +144,21 @@ class SQLs
     {
         $sql = $sql->toArray();
 
+        if (
+            !isset($sql[0]) ||
+            !is_object($sql[0]) ||
+            !is_object(reset($sql)) ||
+            !is_object(end($sql))
+        ) {
+            return;
+        }
+
         // Prevent from duplicating SQLs
         foreach ( $this->requests as $request ) {
-            if ( $request['sql'][0] == $sql[0] ) { // '==' because we compare objects
+            if (
+                ! isset($request['sql'], $request['sql'][0]) || // if not set
+                $request['sql'][0] == $sql[0] // '==' because we compare objects
+            ) {
                 return;
             }
         }
