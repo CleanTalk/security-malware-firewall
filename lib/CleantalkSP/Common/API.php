@@ -593,8 +593,6 @@ class API
             'failed_files_rows'    => $dto->failed_files_rows,
             'suspicious_files'     => $dto->suspicious_files,
             'suspicious_files_rows' => $dto->suspicious_files_rows,
-            'unknown_files'        => $dto->unknown_files,
-            'unknown_files_rows'   => $dto->unknown_files_rows,
         );
 
         if ($request['failed_files'] === '') {
@@ -605,11 +603,6 @@ class API
         if ($request['suspicious_files'] === '') {
             unset($request['suspicious_files']);
             unset($request['suspicious_files_rows']);
-        }
-
-        if ($request['unknown_files'] === '') {
-            unset($request['unknown_files']);
-            unset($request['unknown_files_rows']);
         }
 
         return static::sendRequest($request);
