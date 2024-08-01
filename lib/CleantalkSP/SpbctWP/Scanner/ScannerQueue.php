@@ -822,7 +822,9 @@ class ScannerQueue
             'extensions_exceptions' => '', //array('jpg', 'jpeg', 'png', 'gif', 'css', 'txt', 'zip', 'xml', 'json')
             'file_exceptions'       => 'wp-config.php',
             'files_mandatory'       => array(),
-            'dir_exceptions'        => array(SPBC_PLUGIN_DIR . 'quarantine')
+            'dir_exceptions'        => array(SPBC_PLUGIN_DIR . 'quarantine'),
+            // important!
+            'running_due_stage'     => true
         );
 
         if ( ! empty($spbc->settings['scanner__dir_exclusions']) ) {
@@ -834,22 +836,24 @@ class ScannerQueue
 
         $scanner = new Surface($path_to_scan, $this->root, $init_params);
 
-        $stage_data_obj->increase('scanned_count_files', $scanner->files_count);
-
-        $sql_query__values           = array();
-        $sql_query__values_non_ascii = array();
-        $detected_at                 = current_time('timestamp');
-
-        if ( $offset === 0 && ! $scanner->files_count ) {
-            // First iteration but no files to scan
-            return array('error' => __FUNCTION__ . ' No files to scan',);
+        if ($scanner->has_errors) {
+            return array('error' => __FUNCTION__ . ' Surface analysis internal error.');
         }
 
-        if ( $scanner->files_count ) {
-            $sql_hat = 'INSERT INTO ' . SPBC_TBL_SCAN_FILES
-                       . ' (`path`, `size`, `perms`, `mtime`, `fast_hash`, `full_hash`, `detected_at`, `checked_heuristic`) VALUES ';
+        if ($offset === 0 && $scanner->stage_end && ! $scanner->output_files_count) {
+            return array('error' => __FUNCTION__ . ' No files to scan');
+        }
 
-            foreach ( $scanner->files as $_key => $file ) {
+        if ( $scanner->output_files_count ) {
+            $stage_data_obj->increase('scanned_count_files', $scanner->output_files_count);
+            $sql_query__values           = array();
+            $sql_query__values_non_ascii = array();
+            //should be offset
+            $detected_at                 = current_time('timestamp');
+            $sql_hat                     = 'INSERT INTO ' . SPBC_TBL_SCAN_FILES
+                                           . ' (`path`, `size`, `perms`, `mtime`, `fast_hash`, `full_hash`, `detected_at`, `checked_heuristic`) VALUES ';
+
+            foreach ( $scanner->output_files as $_key => $file ) {
                 $file['path']        = trim($this->db->prepare('%s', $file['path'])->getQuery(), '\'');
                 $file['detected_at'] = $detected_at;
 
@@ -931,41 +935,42 @@ class ScannerQueue
 					weak_spots,
 					NULL
 				);";
-        }
 
-        if ( $sql_query__values ) {
-            $success = $this->db->execute($sql_hat . implode(',', $sql_query__values) . $sql_suffix);
-        }
-        if ( $sql_query__values_non_ascii ) {
-            // @todo Resolve conflict with non ASCII symbol path names. Right now DB errors is suppressed for this cases.
-            @$this->db->execute($sql_hat . implode(',', $sql_query__values_non_ascii) . $sql_suffix);
-        }
-
-        if ( isset($success) && $success === false ) {
-            $output = array(
-                'error'   => __FUNCTION__ . ' DataBase write error while scanning files.',
-                'comment' => substr($this->db->getLastError(), 0, 1000),
-            );
-            if ( $spbc->debug ) {
-                spbc_log($this->db->getLastQuery());
+            if ( $sql_query__values ) {
+                $success = $this->db->execute($sql_hat . implode(',', $sql_query__values) . $sql_suffix);
             }
-        } else {
-            $output = array(
-                'processed'   => $scanner->files_count,
-                'files_count' => $scanner->files_count,
-                'dirs_count'  => $scanner->dirs_count,
-                'offset'      => $offset,
-                'amount'      => $amount,
-                'end'         => false
-            );
+            if ( $sql_query__values_non_ascii ) {
+                // @todo Resolve conflict with non ASCII symbol path names. Right now DB errors is suppressed for this cases.
+                @$this->db->execute($sql_hat . implode(',', $sql_query__values_non_ascii) . $sql_suffix);
+            }
+        }
 
-            // End of stage
-            if ($scanner->files_count < $amount) {
-                $output['end'] = true;
+        if ( isset($success) ) {
+            if ( $success === false ) {
+                $output = array(
+                    'error'   => __FUNCTION__ . ' DataBase write error while scanning files.',
+                    'comment' => substr($this->db->getLastError(), 0, 1000),
+                );
+                if ( $spbc->debug ) {
+                    spbc_log($this->db->getLastQuery());
+                }
+            } else {
+                $output = array(
+                    'processed'   => $scanner->output_files_count,
+                    'files_count' => $scanner->output_files_count,
+                    'dirs_count'  => $scanner->dirs_count,
+                    'offset'      => $offset,
+                    'amount'      => $amount,
+                    'end'         => false,
+                );
 
-                // Checking unsafe permissions
-                $unsafe_permissions_handler = new UnsafePermissionsHandler();
-                $unsafe_permissions_handler->handle();
+                // End of stage
+                if ($scanner->stage_end) {
+                    $output['end'] = true;
+                    // Checking unsafe permissions
+                    $unsafe_permissions_handler = new UnsafePermissionsHandler();
+                    $unsafe_permissions_handler->handle();
+                }
             }
         }
 
@@ -974,7 +979,10 @@ class ScannerQueue
             $init_params['count'] = true;
             unset($init_params['amount'], $init_params['offset']);
             $scanner         = new Surface($path_to_scan, $this->root, $init_params);
-            $output['total'] = $scanner->files_count;
+            if ($scanner->has_errors) {
+                return array('error' => __FUNCTION__ . ' Counting files internal error.');
+            }
+            $output['total'] = $scanner->output_files_count;
         }
 
         $scanning_stages_storage->saveToDb();

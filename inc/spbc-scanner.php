@@ -10,6 +10,7 @@ use CleantalkSP\SpbctWP\Scanner\CureLog\CureLog;
 use CleantalkSP\SpbctWP\Scanner\CureLog\CureLogRecord;
 use CleantalkSP\SpbctWP\Scanner\FrontendScan;
 use CleantalkSP\SpbctWP\Scanner\Stages\CureStage;
+use CleantalkSP\SpbctWP\Scanner\Surface;
 use CleantalkSP\Variables\Post;
 use CleantalkSP\SpbctWP\Scanner\Links;
 use CleantalkSP\SpbctWP\Scanner;
@@ -138,10 +139,10 @@ function spbc_scanner_count_files($direct_call = false, $path = ABSPATH)
         $init_params['dir_exceptions'] = array_merge($init_params['dir_exceptions'], $excluded_dirs);
     }
 
-    $scaner = new Scanner\Surface($path_to_scan, $root_path, $init_params);
+    $scaner = new Surface($path_to_scan, $root_path, $init_params);
 
     $output = array(
-        'total'     => $scaner->files_count,
+        'total'     => $scaner->output_files_count,
         'exec_time' => microtime(true) - $start,
     );
 
