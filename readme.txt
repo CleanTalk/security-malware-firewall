@@ -4,7 +4,7 @@ Tags: security, firewall, malware, wordpress security, brute force
 Requires at least: 3.0
 Tested up to: 6.6
 Requires PHP: 5.6
-Stable tag: 2.138.1
+Stable tag: 2.139
 License: GPLv2
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -336,6 +336,25 @@ This is required for the Security FireWall to function properly. Plugins that ar
 31. **File System Watcher tab**. File System Watcher interface.
 
 == Changelog ==
+
+= 2.139 Aug 05 2024
+* Fix. Backups. Backups tab fixed.
+* Fix. FSWatcher. Added exclusion for RapidLoad.
+* Fix. FSWatcher. Added exclusion for Sendinblue.
+* Fix. Heuristic. SQLs. Fixed error on empty request.
+* Fix. Settings. Security logs display fixed.
+* Fix. Scanner. Cure. Delete the failed cure tries from the cure log on first iteration to avoid files to cure missing.
+* Fix. Scanner. Cure. Not cured files selection fixed.
+* Fix. Vulnerability Alarm. CVE ID layout fixed.
+* Fix. Vulnerability alarm. Display alarms fixed.
+* Fix. Vulnerability Alarm. PSC version gathering adapted to new cloud states.
+* Mod. Scanner. Cure. Malware replacing now uses block comment instead of row comment.
+* Mod. Scanner. Filesystem Analysis. SurfaceNew class implemented to speed up the stage.
+* Mod. Scanner. Sending results. Sending unknown files removed.
+* Upd. Settings. Critical updates tab. Description and header implemented.
+* Upd. Settings. Critical updates tab. Modules name are clickable now and proceeds to the appropriate modules page.
+* Upd. Settings. Critical updates tab. Outdated plugins removed. Legend added.
+* Upd. Settings. Renewal links. Get premium badge updated using LinkConstructor.
 
 = 2.138.1 July 24 2024
 * Fix. Settings. Security logs display fixed.
