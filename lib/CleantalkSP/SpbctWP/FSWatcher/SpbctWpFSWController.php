@@ -5,6 +5,7 @@ namespace CleantalkSP\SpbctWP\FSWatcher;
 use CleantalkSP\SpbctWP\FSWatcher\Scan\SpbctWpFSWScan;
 use CleantalkSP\SpbctWP\FSWatcher\Analyzer\SpbctWpFSWAnalyzer;
 use CleantalkSP\Common\FSWatcher\Logger;
+use CleantalkSP\Variables\Request;
 
 class SpbctWpFSWController extends \CleantalkSP\Common\FSWatcher\Controller
 {
@@ -76,6 +77,12 @@ class SpbctWpFSWController extends \CleantalkSP\Common\FSWatcher\Controller
         }
 
         if (!SpbctWpFSWService::isRC()) {
+            if (Request::get('page') === 'sendinblue' ||
+                in_array('RapidLoad_Buffer::maybe_process_buffer', ob_list_handlers())
+            ) {
+                return;
+            }
+
             $min_exec_time = $spbc->settings['scanner__fs_watcher__snapshots_period'] ?: parent::EXECUTION_MIN_INTERVAL;
             if (SpbctWpFSWService::isMinIntervalPassed($min_exec_time)) {
                 if (self::$debug) {
