@@ -97,6 +97,7 @@ function spbc_search_page_errors($string_page)
 {
     return
         empty($string_page)
+        || !is_string($string_page)
         || strpos($string_page, 'PHP Notice') !== false
         || strpos($string_page, 'PHP Warning') !== false
         || strpos($string_page, 'Fatal error') !== false
