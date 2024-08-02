@@ -289,21 +289,22 @@ function spbc_authenticate__browser_sign__get($user)
  *
  * @param $user
  *
- * @return bool|string Browser sign
+ * @return string Browser sign
  */
 function spbc_authenticate__browser_sign__get_hash($user)
 {
     $sign_collection = get_user_meta($user->ID, 'spbc_browser_sign', true);
-    if (! is_array($sign_collection)) {
-        return $sign_collection;
+
+    if (is_scalar($sign_collection)) {
+        return (string)$sign_collection;
     }
 
-    $sign = '';
-    foreach ($sign_collection as $item) {
-        $sign .= $item;
+    if (is_array($sign_collection)) {
+        $sign = implode('', $sign_collection);
+        return md5($sign);
     }
 
-    return md5($sign);
+    return '';
 }
 
 
@@ -670,7 +671,7 @@ function spbc_wp_logout($id)
             'event'        => 'logout',
             'roles'        => $roles,
             'user_agent'   => spbc_authenticate__user_agent__get($user),
-            'browser_sign' => spbc_authenticate__browser_sign__get($user),
+            'browser_sign' => spbc_authenticate__browser_sign__get_hash($user),
             )
         );
     }
