@@ -2,6 +2,7 @@
 
 namespace CleantalkSP\SpbctWP\Views;
 
+use CleantalkSP\SpbctWP\VulnerabilityAlarm\VulnerabilityAlarmView;
 use CleantalkSP\Variables\Server;
 
 class Settings
@@ -19,6 +20,7 @@ class Settings
 
         $data = [
             "criticalCount" => $spbc->key_is_ok ? $spbc->data['display_scanner_warnings']['critical'] : "",
+            "vulnerabilitiesCount" => $spbc->key_is_ok ? VulnerabilityAlarmView::getCountOfCurrnetlyVulnerableModules() : "",
             "keyIsOk" => $spbc->key_is_ok,
             "displayDebug" => $display_debug,
             "isWPMSMainSite" => is_main_site(),
@@ -107,28 +109,7 @@ class Settings
 
     private static function getPremiumLink()
     {
-        global $spbc;
-
-        $link = '';
-
-        if ($spbc->data['license_trial'] == 1 && ! empty($spbc->user_token) && ! $spbc->data["wl_mode_enabled"] ) {
-            $utm_marks = '&utm_source=wp-backend&utm_medium=cpc&utm_campaign=WP%%20backend%%20trial_security';
-
-            $link = 'https://p.cleantalk.org/?featured=&product_id=4&user_token=' . $spbc->user_token . $utm_marks;
-
-            $url = $spbc->data["wl_mode_enabled"]
-                ? $spbc->data["wl_support_url"]
-                : $link;
-
-            $link = __('Make it right!', 'security-malware-firewall')
-            . sprintf(
-                __(' %sGet premium%s', 'security-malware-firewall'),
-                '<a href="' . $url . '" target="_blank">',
-                '</a>'
-            );
-        }
-
-        return $link;
+        return spbc_badge__get_premium(false, true);
     }
 
     private static function getSupportLink()

@@ -124,16 +124,6 @@ class SendFilesDTO extends DTO
      */
     public $suspicious_files_rows = 0;
 
-    /**
-     * @var string
-     */
-    public $unknown_files = '';
-
-    /**
-     * @var int
-     */
-    public $unknown_files_rows = 0;
-
     protected $obligatory_properties = [
         'api_key',
         'service_id',

@@ -74,11 +74,15 @@ class DirectoryScan
             )
         );
 
-        if ( ! $file_scanner->files_count ) {
+        if ( ! $file_scanner->has_errors ) {
+            throw new Exception('Scanner. Files collection. Directory scan internal error.', 0);
+        }
+
+        if ( ! $file_scanner->output_files_count ) {
             throw new Exception('Scanner. Files collection. No files to scan.', 0);
         }
 
-        $this->files = $file_scanner->files;
+        $this->files = $file_scanner->output_files_count;
     }
 
     public function setFiles($files)

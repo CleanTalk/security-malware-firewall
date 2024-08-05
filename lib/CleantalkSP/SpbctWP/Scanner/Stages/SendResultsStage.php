@@ -80,10 +80,15 @@ class SendResultsStage
 
         $dto = new SendFilesDTO($params);
 
-        $this->gatherFileData($dto);
-        $this->gatherScanData($dto);
-        $this->gatherCountData($dto);
-        $this->gatherSignatureData($dto);
+        try {
+            $this->gatherFileData($dto);
+            $this->gatherScanData($dto);
+            $this->gatherCountData($dto);
+            $this->gatherSignatureData($dto);
+        } catch (\Exception $e) {
+            $error .= $e->getMessage();
+            return $error;
+        }
 
         $result = API::method__security_mscan_logs($dto);
 
@@ -126,10 +131,6 @@ class SendResultsStage
             $dto->suspicious_files      = json_encode($dto->suspicious);
             $dto->suspicious_files_rows = count($dto->suspicious);
         }
-        if ( ! empty($dto->unknown)) {
-            $dto->unknown_files      = json_encode($dto->unknown);
-            $dto->unknown_files_rows = count($dto->unknown);
-        }
     }
 
     /**
@@ -152,6 +153,7 @@ class SendResultsStage
      * Gather count data
      *
      * @param $dto
+     * @throws \Exception
      */
     private function gatherCountData($dto)
     {
@@ -294,6 +296,7 @@ class SendResultsStage
      * @param string $path_to_scan
      *
      * @return array
+     * @throws \Exception
      */
     public function countFileSystem($path_to_scan = ABSPATH)
     {
@@ -318,9 +321,12 @@ class SendResultsStage
         }
 
         $scanner = new Surface($path_to_scan, realpath(ABSPATH), $init_params);
+        if ($scanner->has_errors) {
+            throw new \Exception('Count system files error on sending result');
+        }
 
         return array(
-            'total' => $scanner->files_count,
+            'total' => $scanner->output_files_count,
             'end'   => 1,
         );
     }

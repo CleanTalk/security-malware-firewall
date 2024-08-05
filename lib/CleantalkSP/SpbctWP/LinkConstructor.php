@@ -77,6 +77,13 @@ class LinkConstructor extends \CleantalkSP\Common\LinkConstructor
             'utm_medium' => 'badge',
             'utm_content' => 'renew_plugins_listing',
         ),
+        'renew_top_info' => array( //the renewal link for the SPBCT on the top info near the "Make it right!"
+            'utm_id' => '',
+            'utm_term' => '',
+            'utm_source' => 'admin_panel',
+            'utm_medium' => 'badge',
+            'utm_content' => 'renew_top_info',
+        ),
         'renew_admin_bar_cross_link_apbct' => array( //cross-link to renew anti-spam in admin bar if detected so - probably never works
             'utm_id' => '',
             'utm_term' => '',
