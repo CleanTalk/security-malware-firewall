@@ -16,7 +16,7 @@ echo '<textarea'
      . ' name="spbc_settings[' . $data['name'] . ']" '
      . ($data['required'] ? ' required="required"' : '')
      . ($data['parent'] && ! $spbc->settings[ $data['parent'] ] ? ' disabled="disabled"' : '')
-     . ' style="width: 400px; height: 150px;"'
+     . ' class="spbc_setting__textarea"'
      . ' >'
      . ($data['value'] ?: '')
      . '</textarea>';

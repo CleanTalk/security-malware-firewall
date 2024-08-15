@@ -33,7 +33,7 @@ class View extends \CleantalkSP\Common\FSWatcher\View\View
         $display_selectors = static::snapshotsAreReady($dates) ? 'block' : 'none';
         $html .= '<div style="display:' . $display_selectors  . '">';
         $html .= '<p>' . $phrases->getCompareButtonDescription() . '</p>';
-        $html .= '<div style="display: flex;">';
+        $html .= '<div style="display: flex;flex-wrap: wrap;gap: 16px;">';
 
         $html .= '<div style="display: block;">';
         $html .= '<label style="display: block" for="fswatcher__first_date">' . $phrases->getFirstDateLabel() . '</label>';
@@ -42,7 +42,7 @@ class View extends \CleantalkSP\Common\FSWatcher\View\View
         $html .= '</select>';
         $html .= '</div>';
 
-        $html .= '<div style="display: block; margin-left: 16px;">';
+        $html .= '<div style="display: block;">';
         $html .= '<label style="display: block" for="fswatcher__second_date">' . $phrases->getSecondDateLabel() . '</label>';
         $html .= '<select name="fswatcher__second_date" id="fswatcher__second_date">';
         $html .= parent::renderSelectorOptions($dates);
