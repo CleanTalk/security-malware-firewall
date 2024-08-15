@@ -1,13 +1,10 @@
 <?php
 
 use CleantalkSP\SpbctWP\DB;
-use CleantalkSP\SpbctWP\Helper as SpbcHelper;
 use CleantalkSP\SpbctWP\API as SpbcAPI;
 use CleantalkSP\SpbctWP\Helpers\CSV;
-use CleantalkSP\SpbctWP\Helpers\Helper as QueueHelper;
-use CleantalkSP\SpbctWP\Scanner\Cure;
+use CleantalkSP\SpbctWP\LinkConstructor;
 use CleantalkSP\SpbctWP\Scanner\CureLog\CureLog;
-use CleantalkSP\SpbctWP\Scanner\CureLog\CureLogRecord;
 use CleantalkSP\SpbctWP\Scanner\FrontendScan;
 use CleantalkSP\SpbctWP\Scanner\Stages\CureStage;
 use CleantalkSP\SpbctWP\Scanner\Surface;
@@ -514,8 +511,14 @@ function spbc_scanner_rescan_single_file($file_path, $full_hash, $root_path)
 
 function spbc_scanner_file_delete($direct_call = false, $file_id = null)
 {
+    global $spbc;
+
     if ( ! $direct_call) {
         spbc_check_ajax_referer('spbc_secret_nonce', 'security');
+    }
+
+    if ( $spbc->data['license_trial'] == 1 ) {
+        wp_send_json(['error' => spbc_get_trial_restriction_notice()]);
     }
 
     $time_start = microtime(true);
@@ -1751,8 +1754,12 @@ function spbc_scanner_file_quarantine($direct_call = false, $file_id = null)
 {
     global $wpdb, $spbc;
 
-    if ( ! $direct_call) {
+    if ( ! $direct_call ) {
         spbc_check_ajax_referer('spbc_secret_nonce', 'security');
+    }
+
+    if ( $spbc->data['license_trial'] == 1 ) {
+        wp_send_json(['error' => spbc_get_trial_restriction_notice()]);
     }
 
     $root_path = spbc_get_root_path();
@@ -2303,4 +2310,19 @@ function spbc__get_exists_directories($paths)
     }
 
     return $exists_dirs;
+}
+
+function spbc_get_trial_restriction_notice()
+{
+    global $spbc;
+
+    $html = '<h2>' . esc_html__('Just one step before remove malware', 'security-malware-firewall') . '</h2>';
+    $html .= esc_html__('Please upgrade your account to premium Security license to Cure, Remove and Quarantine viruses and malware. As well as using 1600+ viruses signatures by now.', 'security-malware-firewall');
+    $html .= linkConstructor::buildRenewalLinkATag(
+        $spbc->user_token,
+        '<button class="button button-primary">' . esc_html__('UPGRADE', 'security-malware-firewall') . '<i class="spbc-icon-link-ext"></i></button>',
+        4,
+        'trial_restriction_notice_upgrade_button'
+    );
+    return $html;
 }
