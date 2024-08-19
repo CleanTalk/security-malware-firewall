@@ -98,6 +98,13 @@ class LinkConstructor extends \CleantalkSP\Common\LinkConstructor
             'utm_medium' => 'admin_bar',
             'utm_content' => 'renew_admin_bar',
         ),
+        'trial_restriction_notice_upgrade_button' => array( // the upgrade button in the trial restriction notice
+            'utm_id' => '',
+            'utm_term' => '',
+            'utm_source' => 'admin_panel_scanner',
+            'utm_medium' => 'button',
+            'utm_content' => 'trial_restriction_notice_upgrade_button',
+        ),
     );
 
     public static function buildCleanTalkLink($utm_preset, $uri = '', $get_params = array(), $domain = 'https://cleantalk.org')

@@ -5296,7 +5296,7 @@ function spbctGenerateAndSendConfirmationCode()
             if ($mail_result) {
                 wp_send_json_success();
             } else {
-                wp_send_json_error(__('Confirmation code not send!', 'security-malware-firewall'));
+                wp_send_json_error(__('Confirmation code not sent!', 'security-malware-firewall'));
             }
         } else {
             wp_send_json_error(__('Confirmation code not saved!', 'security-malware-firewall'));

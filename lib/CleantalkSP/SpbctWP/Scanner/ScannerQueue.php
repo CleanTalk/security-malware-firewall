@@ -1673,6 +1673,10 @@ class ScannerQueue
 
     public function auto_cure_backup() // phpcs:ignore PSR1.Methods.CamelCapsMethodName.NotCamelCaps
     {
+        global $spbc;
+        if ( $spbc->data['license_trial'] == 1 ) {
+            return array('success' => true, 'end' => 1);
+        }
         return spbc_backup__files_with_signatures(true);
     }
 
@@ -1684,6 +1688,17 @@ class ScannerQueue
      */
     public function auto_cure($offset = null, $amount = null) // phpcs:ignore PSR1.Methods.CamelCapsMethodName.NotCamelCaps
     {
+        global $spbc;
+        if ( $spbc->data['license_trial'] == 1 ) {
+            $output = [
+                'processed' => 0,
+                'cured' => 0,
+                'end' => 1
+
+            ];
+            return $output;
+        }
+
         $amount = isset($amount) ? $amount : $this->amount;
         $offset = isset($offset) ? $offset : $this->offset;
 
@@ -1729,13 +1744,6 @@ class ScannerQueue
         );
 
         if ( ! empty($scanner->links) ) {
-            // Getting only new links
-            $prev_scanned_links = $this->db->fetchAll(
-                'SELECT link FROM ' . SPBC_TBL_SCAN_LINKS,
-                OBJECT_K
-            );
-            $new_links          = array_diff_key($scanner->links, $prev_scanned_links);
-
             //Getting current scan_id
             $scan_id = $this->db->fetch('SELECT MAX(scan_id) AS scan_num FROM ' . SPBC_TBL_SCAN_LINKS . ';');
             $scan_id = $scan_id->scan_num + 1;
@@ -1747,14 +1755,12 @@ class ScannerQueue
                 . ' VALUES ';
 
             // Preparing data
-            $new_links = QueueHelper::prepareParamForSQLQuery($new_links);
+            $links = QueueHelper::prepareParamForSQLQuery($scanner->links);
             $sql_values = array();
-            foreach ( $new_links as $link => $param ) {
-                $link         = QueueHelper::prepareParamForSQLQuery($link);
-                $sql_values[] = "($scan_id, $link, {$param['domain']}, {$param['link_text']}, {$param['page_url']})";
+            foreach ( $links as $link_details ) {
+                $sql_values[] = "($scan_id, {$link_details['link']}, {$link_details['domain']}, {$link_details['link_text']}, {$link_details['page_url']})";
             }
             $sql_values = implode(',', $sql_values);
-
             // Adding results to storage table
             $this->db->execute($sql_hat . $sql_values);
         }
@@ -1877,7 +1883,9 @@ class ScannerQueue
         $output['success']                           = $success;
         $output['processed']                         = $front_scanner->posts_count;
         $output['end']                               = $front_scanner->posts_count < $amount;
-        $spbc->data['scanner']['scanned_site_pages'] += $output['processed'];
+        if (array_key_exists('scanned_site_pages', $spbc->data['scanner'])) {
+            $spbc->data['scanner']['scanned_site_pages'] += $output['processed'];
+        }
         $spbc->save('data');
 
         $stage_data_obj->increase('success', $output['success']);

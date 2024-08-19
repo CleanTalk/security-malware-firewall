@@ -4,7 +4,7 @@ Tags: security, firewall, malware, wordpress security, brute force
 Requires at least: 3.0
 Tested up to: 6.6
 Requires PHP: 5.6
-Stable tag: 2.139
+Stable tag: 2.140
 License: GPLv2
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -336,6 +336,23 @@ This is required for the Security FireWall to function properly. Plugins that ar
 31. **File System Watcher tab**. File System Watcher interface.
 
 == Changelog ==
+
+= 2.140 Aug 19 2024
+* Upd. WAR. Analysis php://input
+* Fix. FSWatcher. Added exclusion for NotifierForPhone.
+* Fix. Phpcs
+* Upd. WAF. Exploit check from php://input
+* Fix. Typo. Updated warning message.
+* Upd. WAF. Error Control Operators
+* Fix. Code. Unit tests fixed.
+* Fix. FSW. Added exclude for GFForms output hook.
+* Upd. Scanner. Trial license not allowed curing malware.
+* Upd. Scanner. Trial license not allowed quarantine and delete actions.
+* Fix. Code. Code style fixed.
+* Fix. Modal window. Error modal title fixed.
+* Fix. Scanner. Outbound links page_url parameter fixed.
+* Fix. Scanner. Outbound links collecting fixed.
+* Fix. ScannerQueue. Checking for the existence of a key when scanning frontend
 
 = 2.139 Aug 05 2024
 * Fix. Backups. Backups tab fixed.

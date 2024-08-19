@@ -78,7 +78,9 @@ class SpbctWpFSWController extends \CleantalkSP\Common\FSWatcher\Controller
 
         if (!SpbctWpFSWService::isRC()) {
             if (Request::get('page') === 'sendinblue' ||
-                in_array('RapidLoad_Buffer::maybe_process_buffer', ob_list_handlers())
+                Request::get('page') === 'notifierforphone-main-menu' ||
+                in_array('RapidLoad_Buffer::maybe_process_buffer', ob_list_handlers()) ||
+                in_array('GFForms::ensure_hook_js_output', ob_list_handlers())
             ) {
                 return;
             }

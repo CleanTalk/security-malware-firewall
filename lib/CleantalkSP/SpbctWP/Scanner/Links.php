@@ -205,9 +205,12 @@ class Links
                     if ( parse_url($match, PHP_URL_SCHEME) === 'http' || parse_url($match, PHP_URL_SCHEME) === 'https' ) {
                         // Exclusion for website mirrors
                         if ( ! in_array(parse_url($match, PHP_URL_HOST), $this->hosts, true) ) {
-                            $this->links[$match]['domain']    = parse_url($match, PHP_URL_HOST);
-                            $this->links[$match]['link_text'] = trim($matches[1][$key]);
-                            $this->links[$match]['page_url']  = $this->getPageUrlById($current['post_id']);
+                            $this->links[] = [
+                                'link' => $match,
+                                'domain' => parse_url($match, PHP_URL_HOST),
+                                'link_text' => trim($matches[1][$key]),
+                                'page_url' => $this->getPageUrlById($current['post_id'])
+                            ];
                         }
                     }
                 }
@@ -226,9 +229,12 @@ class Links
                     if ( ! filter_var($url, FILTER_VALIDATE_URL) === false ) {
                         // Exclusion for website mirrors
                         if ( ! in_array(parse_url($url, PHP_URL_HOST), $this->hosts, true) ) {
-                            $this->links[$url]['domain']    = parse_url($url, PHP_URL_HOST);
-                            $this->links[$url]['link_text'] = trim($href->nodeValue);
-                            $this->links[$url]['page_url']  = $current['post_id'];
+                            $this->links[] = [
+                                'link' => $match,
+                                'domain' => parse_url($match, PHP_URL_HOST),
+                                'link_text' => trim($matches[1][$key]),
+                                'page_url' => $this->getPageUrlById($current['post_id'])
+                            ];
                         }
                     }
                 }
@@ -259,39 +265,14 @@ class Links
 
     public function getPageUrlById($id)
     {
-        global $wpdb;
-        $result = $wpdb->get_results(
-            "SELECT guid
-			FROM " . $wpdb->posts . " 
-			WHERE ID = $id
-			LIMIT 1",
-            ARRAY_A
-        );
-
-        return $result[0]['guid'];
+        return get_home_url(null, 'post_id=' . $id);
     }
 
     public function postMarkAsChecked()
     {
-        // global $wpdb;
-
         foreach ( $this->post_checked as $id ) {
             update_post_meta($id, '_spbc_links_checked', 1);
         }
-
-        // $sql = "INSERT INTO {$wpdb->postmeta}
-        // (post_id, meta_key, meta_value)
-        // VALUES ";
-
-        // foreach($this->post_checked as $id){
-        // $sql .= "($id, '_spbc_links_checked', 1),";
-        // }
-        // $sql = substr($sql, 0, -1);
-        // $sql .= ' ON DUPLICATE KEY
-        // UPDATE
-        // meta_value = 1;';
-
-        // $wpdb->query($sql);
     }
 
     public static function resetCheckResult()

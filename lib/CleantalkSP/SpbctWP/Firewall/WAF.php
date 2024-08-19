@@ -74,12 +74,34 @@ class WAF extends FirewallModule
             }
         }
 
+        $data_array = array();
+        $query_str = '';
+
+        if (Server::get('QUERY_STRING')) {
+            $query_str = urldecode(Server::get('QUERY_STRING'));
+        } else if (@file_get_contents('php://input')) {
+            $query_str = file_get_contents('php://input');
+        }
+
+        if ( $_POST || $_GET || $_COOKIE ) {
+            $data_array = array($_POST, $_GET, $_COOKIE);
+        } else if (@file_get_contents('php://input')) {
+            $data_flow_row['data_flow_row'] = file_get_contents('php://input');
+            $data_array = array($data_flow_row);
+        }
+
         $results[] = $this->waf__suspicious_check
-            ? $this->wafSuspiciousCheck(array($_POST, $_GET, $_COOKIE))
+            ? $this->wafSuspiciousCheck($data_array)
             : false;
-        $results[] = $this->waf__xss_check ? $this->wafXssCheck(array($_POST, $_GET, $_COOKIE)) : false;
-        $results[] = $this->waf__sql_check ? $this->wafSqlCheck(array($_POST, $_GET)) : false;
-        $results[] = $this->waf__exploit_check ? $this->wafExploitCheck(urldecode(Server::get('QUERY_STRING'))) : false;
+        $results[] = $this->waf__xss_check
+            ? $this->wafXssCheck($data_array)
+            : false;
+        $results[] = $this->waf__sql_check
+            ? $this->wafSqlCheck($data_array)
+            : false;
+        $results[] = $this->waf__exploit_check
+            ? $this->wafExploitCheck($query_str)
+            : false;
 
         // Adding common parameters to results
         foreach ( $results as $key => &$result ) {
