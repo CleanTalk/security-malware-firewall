@@ -316,7 +316,7 @@ class SQLSchema extends \CleantalkSP\Common\DB\SQLSchema
                 array('field' => 'datetime', 'type' => 'datetime', 'null' => 'no',),
                 array('field' => 'timestamp_gmt', 'type' => 'int', 'null' => 'no',),
                 array('field' => 'user_login', 'type' => 'varchar(60)', 'null' => 'no',),
-                array('field' => 'event', 'type' => 'varchar(32)', 'null' => 'no',),
+                array('field' => 'event', 'type' => 'varchar(16)', 'null' => 'no',),
                 array('field' => 'page', 'type' => 'varchar(500)', 'null' => 'yes',),
                 array('field' => 'page_time', 'type' => 'varchar(10)', 'null' => 'yes',),
                 array('field' => 'blog_id', 'type' => 'int', 'null' => 'no',),
