@@ -87,4 +87,11 @@ class LinkConstructor
         //prepare link
         return '<a href="' . $link . '" target="_blank">' . $link_inner_html . '</a>';
     }
+
+    public static function buildSimpleLink($domain, $uri = '')
+    {
+        $domain = rtrim($domain, '/');
+        $link = $domain . '/' . $uri;
+        return $link;
+    }
 }
