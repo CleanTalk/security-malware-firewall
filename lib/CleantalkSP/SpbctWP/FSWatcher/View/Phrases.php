@@ -21,7 +21,7 @@ class Phrases extends \CleantalkSP\Common\FSWatcher\View\Phrases
     public function getExtendedTabDescription()
     {
         global $spbc;
-        $link = '<a href="' . $spbc->settings_link . '&spbc_tab=settings_general#spbc_setting_scanner__fs_watcher">[link]</a>';
+        $link = '<a href="' . $spbc->settings_link . '&spbc_tab=settings_general#spbc_setting_scanner__fs_watcher">' . __('File System Watcher', 'security-malware-firewall') . '</a>';
         $phrase = sprintf(__('Snapshots frequency can be managed in the plugin settings: %s', 'security-malware-firewall'), $link);
         $phrase .= '&nbsp;';
         $phrase .= __('Also, you can run snapshot immediately by clicking the button below and refreshing this page after.', 'security-malware-firewall');

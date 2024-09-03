@@ -6,6 +6,7 @@ use CleantalkSP\SpbctWP\Variables\Cookie;
 use CleantalkSP\SpbctWP\Helpers\IP;
 use CleantalkSP\Variables\Get;
 use CleantalkSP\Variables\Server;
+use CleantalkSP\SpbctWP\LinkConstructor;
 
 add_filter('authenticate', 'spbc_authenticate', 20, 3); // Hooks for authentificate
 add_action('login_errors', 'spbc_fix_error_messages', 99999); // Filters error message
@@ -418,13 +419,37 @@ function spbc_2fa__show_field()
             if ( spbc_is_user_role_in($spbc->settings['2fa__roles'], $user_name)
                 && ( isset($spbc->data['2fa_keys'][ $user_name ]) || $type2fa === 'google_authenticator' )
             ) {
+                $tech_support_url = $spbc->default_settings['edit_tech_support_url__link_default'];
+                if (
+                    $spbc->storage['settings']['edit_tech_support_url__enabled'] &&
+                    $spbc->storage['settings']['edit_tech_support_url__link']
+                ) {
+                    $tech_support_url =
+                        LinkConstructor::buildSimpleLink(
+                            get_home_url(),
+                            $spbc->storage['settings']['edit_tech_support_url__link']
+                        );
+                }
+
+                if (
+                    $spbc->storage['settings']['edit_tech_support_url__enabled'] &&
+                    $spbc->storage['settings']['edit_tech_support_url__remove']
+                ) {
+                    $tech_support_url = '';
+                }
+
+                if ( $tech_support_url ) {
+                    $tech_support_url = '<a href="' . esc_url($tech_support_url) . '">tech support</a>';
+                } else {
+                    $tech_support_url = 'tech support';
+                }
                 $replacement =
                     '<h3 style="text-align: center;margin: 0 0 10px 0;">' . $spbc->data["wl_brandname"] . '</h3>'
                     . '<p id="spbc_2fa_wrapper" style="display: inline !important;">'
                     . '<label for="spbc_2fa">' . $label . '</label>'
                     . '<input type="text"   name="spbc_2fa" id="spbc_2fa" class="input" value="" size="20" />'
-                    . '<input type="hidden" name="log"                    class="input" value="' . $user_name . '" />'
-                    . $description . '<br><br>Contact <a href="' . $spbc->data["wl_support_url"] . '">tech support</a> if you have questions.<br><br>'
+                    . '<input type="hidden" name="log" class="input" value="' . $user_name . '" />'
+                    . $description . '<br><br>Contact ' . $tech_support_url . ' if you have questions.<br><br>'
                     . '</p>'
                     . '<p class="submit" style="display: inline !important;">'
                     . '<input type="submit" name="wp-submit" id="wp-submit" class="button button-primary button-large" value="Log In">'
