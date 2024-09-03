@@ -4,7 +4,7 @@ Tags: security, firewall, malware, wordpress security, brute force
 Requires at least: 3.0
 Tested up to: 6.6
 Requires PHP: 5.6
-Stable tag: 2.140
+Stable tag: 2.141
 License: GPLv2
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -336,6 +336,18 @@ This is required for the Security FireWall to function properly. Plugins that ar
 31. **File System Watcher tab**. File System Watcher interface.
 
 == Changelog ==
+
+= 2.141 Sep 02 2024
+* Upd. Security admin. Adaptive version
+* Fix. FSW. Added exclude for ListingPro output hook.
+* Fix. FSW. Comparing snapshots when showing a file
+* Fix. Vulnerability alarm. Checking vulnerabilities via synchronization implemented
+* Upd. BannerLinks. Compiling links to treatment through class LinkConstructor
+* Upd. SignatureAnalysis. Removing the link and checking for v0 signatures (#409)
+* New. Settings. New option to change and delete the technical support link on the authorization page (#410)
+* Fix. Settings. File system watcher settings fixed.
+* Fix. Scanner. Timeout increased for the action `delete`.
+* Fix. FSW. Updated statement to exclude buffer handler by const.
 
 = 2.140 Aug 19 2024
 * Upd. WAR. Analysis php://input
