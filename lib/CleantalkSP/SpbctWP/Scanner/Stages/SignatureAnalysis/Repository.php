@@ -179,19 +179,14 @@ class Repository
     {
         global $spbc;
         $file_url = '';
-        //list available urls
-        $file_of_v0 = 'https://cleantalk-security.s3.us-west-2.amazonaws.com/security_signatures/security_signatures_mapped.csv.gz';
         $file_of_v3 = 'https://cleantalk-security.s3.us-west-2.amazonaws.com/security_signatures/security_signatures_mapped_v3.csv.gz';
 
-        //todo Remove v0 URL and it's check once the task is finished https://doboard.com/1/task/8507
-        //check response and select available URL, v3 first
+        //check response and select available URL
         if ( HTTP::getResponseCode($file_of_v3) === 200 ) {
             //use v3 if available
             $file_url = $file_of_v3;
-        } elseif (HTTP::getResponseCode($file_of_v0) === 200) {
-            //else, use no version file if available
-            $file_url = $file_of_v0;
         }
+
         if (!empty($file_url)) {
             //save to data the last URL
             $spbc->data['scanner']['last_signatures_file_url'] = $file_url;

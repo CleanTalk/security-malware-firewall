@@ -6,6 +6,7 @@ use CleantalkSP\SpbctWP\FSWatcher\Scan\SpbctWpFSWScan;
 use CleantalkSP\SpbctWP\FSWatcher\Analyzer\SpbctWpFSWAnalyzer;
 use CleantalkSP\Common\FSWatcher\Logger;
 use CleantalkSP\Variables\Request;
+use CleantalkSP\Variables\Server;
 
 class SpbctWpFSWController extends \CleantalkSP\Common\FSWatcher\Controller
 {
@@ -80,7 +81,10 @@ class SpbctWpFSWController extends \CleantalkSP\Common\FSWatcher\Controller
             if (Request::get('page') === 'sendinblue' ||
                 Request::get('page') === 'notifierforphone-main-menu' ||
                 in_array('RapidLoad_Buffer::maybe_process_buffer', ob_list_handlers()) ||
-                in_array('GFForms::ensure_hook_js_output', ob_list_handlers())
+                in_array('GFForms::ensure_hook_js_output', ob_list_handlers()) ||
+                (spbc_is_plugin_active('listingpro-plugin/plugin.php') && Server::inUri('listing')) ||
+                count(ob_list_handlers()) > 1 ||
+                (defined('CT_SPBCT_RUN_FSW_ONLY_ON_ADMIN') && !is_admin())
             ) {
                 return;
             }

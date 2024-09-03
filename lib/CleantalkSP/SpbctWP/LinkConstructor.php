@@ -105,6 +105,13 @@ class LinkConstructor extends \CleantalkSP\Common\LinkConstructor
             'utm_medium' => 'button',
             'utm_content' => 'trial_restriction_notice_upgrade_button',
         ),
+        'banner_link_for_treatment' => array(
+            'utm_id' => '',
+            'utm_term' => '',
+            'utm_source' => 'admin_panel',
+            'utm_medium' => 'button',
+            'utm_content' => 'banner_link_for_treatment',
+        ),
     );
 
     public static function buildCleanTalkLink($utm_preset, $uri = '', $get_params = array(), $domain = 'https://cleantalk.org')
@@ -115,5 +122,10 @@ class LinkConstructor extends \CleantalkSP\Common\LinkConstructor
     public static function buildRenewalLinkATag($user_token, $link_inner_html, $product_id, $utm_preset)
     {
         return parent::buildRenewalLinkATag($user_token, $link_inner_html, $product_id, $utm_preset);
+    }
+
+    public static function buildSimpleLink($domain, $uri = '')
+    {
+        return parent::buildSimpleLink($domain, $uri);
     }
 }
