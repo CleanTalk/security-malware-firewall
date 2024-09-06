@@ -370,17 +370,27 @@ class ListTable
 				next_page='$next_page'
 				last_page='" . ceil($this->items_total / $this->pagination['per_page']) . "'
 			>";
-            echo "<form>";
-            echo "<span class='tbl-pagination--total'>{$this->items_total} Entries</span>";
-            echo '<button type="button" class="tbl-button tbl-pagination--button tbl-pagination--start"><i class="spbc-icon-to-start"></i></button>';
-            echo '<button type="button" class="tbl-button tbl-pagination--button tbl-pagination--prev"><i class="spbc-icon-fast-bw"></i></button>';
-            echo "<input type='text' class='tbl-pagination--curr_page' value='{$this->pagination['page']}'/>";
-            echo '<span class="tbl-pagination--total"> of ' . ceil($this->items_total / $this->pagination['per_page']) . '</span>';
-            echo '<button type="submit" class="tbl-button tbl-pagination--button tbl-pagination--go">' . __('Go') . '</button>';
-            echo '<button type="button" class="tbl-button tbl-pagination--button tbl-pagination--next"><i class="spbc-icon-fast-fw"></i></button>';
-            echo '<button type="button" class="tbl-button tbl-pagination--button tbl-pagination--end"><i class="spbc-icon-to-end"></i></button>';
-            echo '<img class="tbl-preloader--small" src="' . SPBC_PATH . '/images/preloader2.gif" />';
-            echo "</form>";
+                echo "<form>";
+                    echo '<div style="display: flex;align-items: center;flex-wrap: wrap;">';
+                        echo "<span class='tbl-pagination--total'>{$this->items_total} Entries</span>";
+                        echo '<div style="display: flex;flex-wrap: wrap;">';
+                            echo '<div>';
+                                echo '<button type="button" class="tbl-button tbl-pagination--button tbl-pagination--start"><i class="spbc-icon-to-start"></i></button>';
+                                echo '<button type="button" class="tbl-button tbl-pagination--button tbl-pagination--prev"><i class="spbc-icon-fast-bw"></i></button>';
+                            echo '</div>';
+                            echo '<div>';
+                                echo "<input type='text' class='tbl-pagination--curr_page' value='{$this->pagination['page']}'/>";
+                                echo '<span class="tbl-pagination--total"> of ' . ceil($this->items_total / $this->pagination['per_page']) . '</span>';
+                                echo '<button type="submit" class="tbl-button tbl-pagination--button tbl-pagination--go">' . __('Go') . '</button>';
+                            echo '</div>';
+                            echo '<div>';
+                                echo '<button type="button" class="tbl-button tbl-pagination--button tbl-pagination--next"><i class="spbc-icon-fast-fw"></i></button>';
+                                echo '<button type="button" class="tbl-button tbl-pagination--button tbl-pagination--end"><i class="spbc-icon-to-end"></i></button>';
+                                echo '<img class="tbl-preloader--small" src="' . SPBC_PATH . '/images/preloader2.gif" />';
+                            echo '</div>';
+                        echo '</div>';
+                    echo '</div>';
+                echo "</form>";
             echo '</div>';
         }
     }
@@ -467,7 +477,8 @@ class ListTable
                         $hide_mob_class_name = 'mob_entries';
                     }
                     $mob_class_block = 'mob_block_' . $blocks_count;
-                    $out .= "<td class='$classes $hide_mob_class_name $mob_class_block $hide_show_mob_class_name'" . ">";
+                    $column_heading = $column['heading'];
+                    $out .= "<td class='$classes $hide_mob_class_name $mob_class_block $hide_show_mob_class_name' data-before='$column_heading'>";
                     $out .= isset($item[$column_key]) ? $gray_start . $item[$column_key] . $gray_end : '-';
                     $out .= isset($column['primary'])
                         ? '<button type="button" onclick="spbcShowHideRows(' . $blocks_count . ',' . $class_key . ')" class="toggle-row"><span class="screen-reader-text">' . __(

@@ -62,7 +62,10 @@ class SpbctWpFSWAnalyzer extends \CleantalkSP\Common\FSWatcher\Analyzer\Analyzer
         $path_found_in_journal = false;
 
         foreach ($journals as $journal_id) {
-            if (self::isFileOfFSWJournal($path, $journal_id)) {
+            if (
+                self::isFileOfFSWJournal($path, $journal_id) &&
+                self::isFileOfFSWJournalAfterCompareJournals($path)
+            ) {
                 $path_found_in_journal = true;
                 break;
             }
@@ -89,6 +92,29 @@ class SpbctWpFSWAnalyzer extends \CleantalkSP\Common\FSWatcher\Analyzer\Analyzer
         if (strpos($journal_parsed, $path) !== false) {
             return true;
         }
+        return false;
+    }
+
+    /**
+     * @param $path
+     * @return bool
+     */
+    private static function isFileOfFSWJournalAfterCompareJournals($path)
+    {
+        $journal_result_compare = self::getCompareResult();
+        $journal_result_string = '';
+        foreach ($journal_result_compare as $journal_result) {
+            if (count($journal_result) > 0) {
+                foreach ($journal_result as $value) {
+                    $journal_result_string .= implode(' , ', $value);
+                }
+            }
+        }
+
+        if (strpos($journal_result_string, $path) !== false) {
+            return true;
+        }
+
         return false;
     }
 }

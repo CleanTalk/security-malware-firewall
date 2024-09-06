@@ -43,6 +43,10 @@ class State extends \CleantalkSP\Common\State
         'bfp__delay__5_fails'               => 10,   // Delay to sleep after 5 wrong auths
         'bfp__block_period__5_fails'        => 3600, // By default ban IP for brute force for one hour
         'bfp__count_interval'               => 900,  // Counting login attempts in this interval
+        'edit_tech_support_url__enabled'    => 0,
+        'edit_tech_support_url__link_default'     => 'https://wordpress.org/support/plugin/security-malware-firewall',
+        'edit_tech_support_url__link'       => '',
+        'edit_tech_support_url__remove'     => 0,
         'login_page_rename__enabled'        => 0,
         'login_page_rename__name'           => 'custom-login-url',
         'login_page_rename__redirect'       => '',

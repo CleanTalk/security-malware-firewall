@@ -32,13 +32,29 @@ class Settings
         echo '<div id="spbct-page-tabs--react" data-data=\'' . json_encode($data) . '\'></div>';
     }
 
-    public static function page()
+    public static function page($id_element = false)
     {
         global $spbc;
 
         if (is_network_admin()) {
             self::earlyOutput();
             return;
+        }
+        $class_element = '';
+        $id_react_element_default = 'spbct-page--react';
+
+        $id_react_element_mob_about_ct = 'spbct-page-mob-about-ct--react';
+        $class_element_mob_about_ct = 'spbc_page_mob_info__about_block';
+
+        switch ($id_element) {
+            case 'mob_about_ct':
+                $id_element = $id_react_element_mob_about_ct;
+                $class_element = $class_element_mob_about_ct;
+                break;
+
+            default:
+                $id_element = $id_react_element_default;
+                break;
         }
 
         self::checkPhpVersion();
@@ -85,7 +101,7 @@ class Settings
             // errors
             'spbcErrors' => spbc_settings__error__output(),
         ];
-        echo '<div id="spbct-page--react" data-data=\'' . json_encode($spbct_page_data) . '\'></div>';
+        echo '<div id="' . $id_element . '" data-data=\'' . json_encode($spbct_page_data) . '\' class="' . $class_element . '"></div>';
     }
 
     private static function getAdminsOnline()

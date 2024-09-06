@@ -1,5 +1,22 @@
 == Changelog ==
 
+= 2.140 Aug 19 2024
+* Upd. WAR. Analysis php://input
+* Fix. FSWatcher. Added exclusion for NotifierForPhone.
+* Fix. Phpcs
+* Upd. WAF. Exploit check from php://input
+* Fix. Typo. Updated warning message.
+* Upd. WAF. Error Control Operators
+* Fix. Code. Unit tests fixed.
+* Fix. FSW. Added exclude for GFForms output hook.
+* Upd. Scanner. Trial license not allowed curing malware.
+* Upd. Scanner. Trial license not allowed quarantine and delete actions.
+* Fix. Code. Code style fixed.
+* Fix. Modal window. Error modal title fixed.
+* Fix. Scanner. Outbound links page_url parameter fixed.
+* Fix. Scanner. Outbound links collecting fixed.
+* Fix. ScannerQueue. Checking for the existence of a key when scanning frontend
+
 = 2.134.3 June 06 2024
 * Upd. FSWatcher. FIle system watcher functionality improved.
 
