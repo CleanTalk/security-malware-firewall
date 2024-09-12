@@ -83,6 +83,14 @@ class SpbctWpFSWController extends \CleantalkSP\Common\FSWatcher\Controller
                 in_array('RapidLoad_Buffer::maybe_process_buffer', ob_list_handlers()) ||
                 in_array('GFForms::ensure_hook_js_output', ob_list_handlers()) ||
                 (spbc_is_plugin_active('listingpro-plugin/plugin.php') && Server::inUri('listing')) ||
+                // WP_Estimation_Form
+                (
+                    spbc_is_plugin_active('WP_Estimation_Form/estimation-form.php') &&
+                    (
+                        strpos(Request::get('screen_id'), 'lfb') !== false ||
+                        strpos(Request::get('page'), 'lfb') !== false
+                    )
+                ) ||
                 count(ob_list_handlers()) > 1 ||
                 (defined('CT_SPBCT_RUN_FSW_ONLY_ON_ADMIN') && !is_admin())
             ) {
