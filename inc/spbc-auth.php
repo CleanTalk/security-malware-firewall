@@ -439,7 +439,7 @@ function spbc_2fa__show_field()
                 }
 
                 if ( $tech_support_url ) {
-                    $tech_support_url = '<a href="' . esc_url($tech_support_url) . '">tech support</a>';
+                    $tech_support_url = '<a href="' . esc_url($tech_support_url) . '" target="_blank">tech support</a>';
                 } else {
                     $tech_support_url = 'tech support';
                 }

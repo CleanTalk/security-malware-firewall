@@ -799,6 +799,21 @@ function spbc_get_brief_data_for_firewalls($current_fw_data, $current_bfp_data, 
  */
 function spbc_parse_action_from_admin_page_uri($url, $post_id = null)
 {
+    $out = array(
+        // !important! - length of the action event is restricted by 16 symbols on API
+        'action_event' => 'empty_url',
+        'add_time' => true,
+        'post_id' => null,
+        'page_action' => 'unknown',
+        'plugin_name' => null,
+    );
+    // fix for wptexturize hook
+    if (empty($url) && !is_string($url)) {
+        return $out;
+    }
+    $url = str_replace('#038;', '&', $url);
+    $url = str_replace('&&', '&', $url);
+    // parse url then
     $parsed_url = parse_url($url);
     $parsed_query = [];
     $plugin_name = '';
@@ -815,103 +830,99 @@ function spbc_parse_action_from_admin_page_uri($url, $post_id = null)
             $plugin_name = explode('/', $parsed_query['plugin'])[0];
         }
     }
-    $out = array(
-        'action_event' => 'Action of empty URL',
-        'add_time' => true,
-        'post_id' => null,
-        'page_action' => null,
-        'plugin_name' => null,
-    );
-    if (!is_null($url)) {
-        switch ($url) {
-            case ('/wp-admin/edit.php' == $url
-                || '/wp-admin/network/edit.php' == $url
-                ? true
-                : false):
-                $out['action_event'] = 'viewing_posts_list';
-                break;
-            case ('/wp-admin/edit.php?post_type=page' == $url
-                || '/wp-admin/network/edit.php?post_type=page' == $url
-                ? true
-                : false):
-                $out['action_event'] = 'viewing_pages_list';
-                break;
-            case (preg_match('#/wp-admin/post.php\?post=[\d\w]+&action=edit#', $url)
-                || preg_match('#/wp-admin/network/post.php\?post=[\d\w]+&action=edit#', $url)
-                ? true
-                : false):
-                $post_id = is_null($post_id) && isset($parsed_query['post']) ? (int)$parsed_query['post'] : null;
-                $page_action = '';
-                if (strpos($url, 'message=6') !== false) {
-                    $page_action = ': ' . __('publish', 'security-malware-firewall');
-                }
-                if (strpos($url, 'message=3') !== false) {
-                    $page_action = ': ' . __('field remove', 'security-malware-firewall');
-                }
-                if (strpos($url, 'message=2') !== false) {
-                    $page_action = ': ' . __('field add', 'security-malware-firewall');
-                }
-                if (strpos($url, 'message=4') !== false || strpos($url, 'message=1') !== false) {
-                    $page_action = ': ' . __('update', 'security-malware-firewall');
-                }
-                if (strpos($url, 'message=7') !== false) {
-                    $page_action = ': ' . __('save', 'security-malware-firewall');
-                }
-                if (strpos($url, 'message=10') !== false) {
-                    $page_action = ': ' . __('draft update', 'security-malware-firewall');
-                }
-                if ( is_int($post_id) ) {
-                    $out['action_event'] = 'editing_post_id';
-                    $out['post_id'] = $post_id;
-                    $out['page_action'] = $page_action;
-                } else {
-                    $out['action_event'] = 'editing_post';
-                }
-                break;
-            case (preg_match('#/wp-admin/plugins.php\?.*action=activate#', $url)
-                || preg_match('#/wp-admin/network/plugins.php\?.*action=activate#', $url)
-                ? true
-                : false):
-                $out['action_event'] = 'activate_plugin_name';
-                $out['plugin_name'] = $plugin_name;
-                $out['add_time'] = false;
-                break;
-            case (preg_match('#/wp-admin/plugins.php\?.*action=deactivate#', $url)
-                || preg_match('#/wp-admin/network/plugins.php\?.*action=deactivate#', $url)
-                ? true
-                : false):
-                $out['action_event'] = 'deactivate_plugin_name';
-                $out['plugin_name'] = $plugin_name;
-                $out['add_time'] = false;
-                break;
-            case (preg_match('#/wp-admin/update.php\?.*action=upload-plugin#', $url)
-            || preg_match('#/wp-admin/network/update.php\?.*action=upload-plugin#', $url)
-                ? true
-                : false):
-                $out['action_event'] = 'uploading_plugin';
-                $out['add_time'] = false;
-                break;
-            case (preg_match('#/wp-admin/users.php\?.*update=add#', $url)
-            || preg_match('#/wp-admin/network/users.php\?.*update=add#', $url)
-                ? true
-                : false):
-                $out['action_event'] = 'adding_user';
-                $out['add_time'] = false;
-                break;
-            case (preg_match('#/wp-admin/users.php\?.*delete_count#', $url)
-            || preg_match('#/wp-admin/network/users.php\?.*delete_count#', $url)
-                ? true
-                : false):
-                $out['action_event'] = 'deleting_user';
-                $out['add_time'] = false;
-                break;
-            default:
-                preg_match_all('/\/wp-admin\/(.+\.php)\?(action=.+?)&/', $url, $matches);
-                $file = !empty($matches[1]) && !empty($matches[1][0]) ? $matches[1][0] : '';
-                $the_action = !empty($matches[2]) && !empty($matches[2][0]) ? $matches[2][0] : '';
-                $out['action_event'] = !empty($file) && !empty($the_action) ? $file . '...' . $the_action : 'view';
-                $out['add_time'] = false;
-        }
+    switch ($url) {
+        case ('/wp-admin/edit.php' == $url
+        || '/wp-admin/network/edit.php' == $url
+            ? true
+            : false):
+            $out['action_event'] = 'view_posts_list';
+            break;
+        case ('/wp-admin/edit.php?post_type=page' == $url
+        || '/wp-admin/network/edit.php?post_type=page' == $url
+            ? true
+            : false):
+            $out['action_event'] = 'view_pages_list';
+            break;
+        case (preg_match('#/wp-admin/post.php\?post=[\d\w]+&action=edit#', $url)
+        || preg_match('#/wp-admin/network/post.php\?post=[\d\w]+&action=edit#', $url)
+            ? true
+            : false):
+            $post_id = is_null($post_id) && isset($parsed_query['post']) ? (int)$parsed_query['post'] : null;
+            $page_action = '';
+            if (strpos($url, 'message=6') !== false) {
+                $page_action = ': ' . __('publish', 'security-malware-firewall');
+            }
+            if (strpos($url, 'message=3') !== false) {
+                $page_action = ': ' . __('field remove', 'security-malware-firewall');
+            }
+            if (strpos($url, 'message=2') !== false) {
+                $page_action = ': ' . __('field add', 'security-malware-firewall');
+            }
+            if (strpos($url, 'message=4') !== false || strpos($url, 'message=1') !== false) {
+                $page_action = ': ' . __('update', 'security-malware-firewall');
+            }
+            if (strpos($url, 'message=7') !== false) {
+                $page_action = ': ' . __('save', 'security-malware-firewall');
+            }
+            if (strpos($url, 'message=10') !== false) {
+                $page_action = ': ' . __('draft update', 'security-malware-firewall');
+            }
+            if ( is_int($post_id) ) {
+                $out['action_event'] = 'editing_post_id';
+                $out['post_id'] = $post_id;
+                $out['page_action'] = $page_action;
+            } else {
+                $out['action_event'] = 'editing_post';
+            }
+            break;
+        case (preg_match('#/wp-admin/plugins.php\?.*action=activate#', $url)
+        || preg_match('#/wp-admin/network/plugins.php\?.*action=activate#', $url)
+            ? true
+            : false):
+            $out['action_event'] = 'activate_plugin';
+            $out['plugin_name'] = $plugin_name;
+            $out['add_time'] = false;
+            break;
+        case (preg_match('#/wp-admin/plugins.php\?.*action=deactivate#', $url)
+        || preg_match('#/wp-admin/network/plugins.php\?.*action=deactivate#', $url)
+            ? true
+            : false):
+            $out['action_event'] = 'deact_plugin';
+            $out['plugin_name'] = $plugin_name;
+            $out['add_time'] = false;
+            break;
+        case (preg_match('#/wp-admin/update.php\?.*action=upload-plugin#', $url)
+        || preg_match('#/wp-admin/network/update.php\?.*action=upload-plugin#', $url)
+            ? true
+            : false):
+            $out['action_event'] = 'uploading_plugin';
+            $out['add_time'] = false;
+            break;
+        case (preg_match('#/wp-admin/users.php\?.*update=add#', $url)
+        || preg_match('#/wp-admin/network/users.php\?.*update=add#', $url)
+            ? true
+            : false):
+            $out['action_event'] = 'adding_user';
+            $out['add_time'] = false;
+            break;
+        case (preg_match('#/wp-admin/users.php\?.*delete_count#', $url)
+        || preg_match('#/wp-admin/network/users.php\?.*delete_count#', $url)
+            ? true
+            : false):
+            $out['action_event'] = 'deleting_user';
+            $out['add_time'] = false;
+            break;
+        default:
+            preg_match_all('/\/wp-admin\/(.+\.php)\?(action=.+?)&/', $url, $matches);
+            $file = !empty($matches[1]) && !empty($matches[1][0]) ? $matches[1][0] : '';
+            $the_action = !empty($matches[2]) && !empty($matches[2][0]) ? $matches[2][0] : '';
+            $event = !empty($file) && !empty($the_action) ? $file . '...' . $the_action : 'view';
+            // shortening to 16 symbols
+            $event = strlen($event) > 16
+                ? '..' . substr($event, -14, -14)
+                : $event;
+            $out['action_event'] = $event;
+            $out['add_time'] = false;
     }
     return $out;
 }

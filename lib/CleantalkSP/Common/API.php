@@ -4,6 +4,7 @@ namespace CleantalkSP\Common;
 
 use CleantalkSP\Common\HTTP\Request;
 use CleantalkSP\SpbctWP\DTO\MScanFilesDTO;
+use CleantalkSP\SpbctWP\DTO\SecurityLogsDTO;
 use CleantalkSP\SpbctWP\Scanner\Stages\DTO\SendBackupDTO;
 use CleantalkSP\SpbctWP\Scanner\Stages\DTO\SendFilesDTO;
 
@@ -398,22 +399,13 @@ class API
      * Wrapper for security_logs API method.
      * Sends security logs to the cloud.
      *
-     * @param string $api_key
-     * @param array $data
+     * @param SecurityLogsDTO $dto Data transfer object
      *
-     * @return array|bool|mixed
+     * @return array|string[]
      */
-    public static function method__security_logs($api_key, $data) // phpcs:ignore PSR1.Methods.CamelCapsMethodName.NotCamelCaps
+    public static function method__security_logs(SecurityLogsDTO $dto) // phpcs:ignore PSR1.Methods.CamelCapsMethodName.NotCamelCaps
     {
-        $request = array(
-            'auth_key'    => $api_key,
-            'method_name' => 'security_logs',
-            //TODO Probably the better way is to send this in time() however, dashboard does not apply the offset,
-            // because dashboard do not know the offset for the site
-            'timestamp'   => current_time('timestamp'),
-            'data'        => json_encode($data),
-            'rows'        => count($data),
-        );
+        $request = $dto->getArray();
 
         return static::sendRequest($request);
     }

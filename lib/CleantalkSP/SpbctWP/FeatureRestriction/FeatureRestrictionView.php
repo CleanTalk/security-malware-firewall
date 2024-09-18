@@ -44,7 +44,7 @@ class FeatureRestrictionView
     public static function renewNotice()
     {
         global $spbc;
-        $renew_text = __('Renew your license, unlock all Security features and join to 20k+ WordPress users who trust CleanTalk!', 'security-malware-firewall');
+        $renew_text = __('Renew your license, unlock all Security features and join to 30k+ WordPress users who trust CleanTalk!', 'security-malware-firewall');
         $button_text = __('Renew Security license', 'security-malware-firewall');
         $link_tag = linkConstructor::buildRenewalLinkATag(
             $spbc->user_token,
