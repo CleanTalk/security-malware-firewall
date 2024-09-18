@@ -45,4 +45,18 @@ class DTO
                    $this->obligatory_properties
                );
     }
+
+    /**
+     * Get array of all DTO properties as key-value, except obligatory_properties.
+     * @return array
+     */
+    public function getArray()
+    {
+        $array = array();
+        foreach (get_object_vars($this) as $key => $value) {
+            $array[$key] = $value;
+        }
+        unset($array['obligatory_properties']);
+        return $array;
+    }
 }

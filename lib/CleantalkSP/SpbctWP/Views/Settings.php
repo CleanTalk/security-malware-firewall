@@ -83,11 +83,6 @@ class Settings
                 'https://l.cleantalk.org/website-malware-removal',
                 __('Malware cleaning', 'security-malware-firewall')
             ),
-            'websiteSecurityAudit' => self::generatePreNamedHref(
-                'https://l.cleantalk.org/website-security-audit',
-                __('Website security audit', 'security-malware-firewall')
-            ),
-
             // buttons
             'goToCleanTalkLink' => esc_html(self::goToCleantalkLink()),
             'goToCleanTalkText' => __('Security Dashboard', 'security-malware-firewall'),

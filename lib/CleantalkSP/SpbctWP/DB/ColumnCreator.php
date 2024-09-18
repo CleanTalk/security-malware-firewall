@@ -57,6 +57,7 @@ class ColumnCreator
     public function changeColumns($columns = array())
     {
         foreach ( $columns as $column_name ) {
+            do_action('ColumnCreator_before_change_column_' . $column_name);
             foreach ( $this->relevant_schema['columns'] as $column ) {
                 if ( $column_name === $column['field'] ) {
                     $column = array_merge(array('null' => 'YES', 'default' => '', 'extra' => ''), $column);

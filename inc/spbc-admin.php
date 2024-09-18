@@ -440,7 +440,10 @@ function spbc_enqueue_scripts($hook)
     ));
 
     wp_enqueue_script('spbc_cookie', SPBC_PATH . '/js/spbc-cookie.min.js', array('jquery'), SPBC_VERSION, false /*in header*/);
-    wp_localize_script('spbc_cookie', 'spbcPublic', array(
+    wp_localize_script(
+        'spbc_cookie',
+        'spbcPublic',
+        array (
         '_ajax_nonce'                          => wp_create_nonce('ct_secret_stuff'),
         '_rest_nonce'                          => wp_create_nonce('wp_rest'),
         '_ajax_url'                            => admin_url('admin-ajax.php', 'relative'),
@@ -448,7 +451,9 @@ function spbc_enqueue_scripts($hook)
         //            '_apbct_ajax_url'                      => APBCT_URL_PATH . '/lib/Cleantalk/ApbctWP/Ajax.php',
         'data__set_cookies'                    => $spbc->settings['data__set_cookies'],
         'data__set_cookies__alt_sessions_type' => $spbc->settings['data__set_cookies__alt_sessions_type'],
-    ));
+        'no_confirm_row_actions'               => spbc_get_no_confirm_row_actions(),
+        )
+    );
 
     if ($spbc->settings['upload_checker__file_check'] && in_array($hook, array('upload.php', 'media-new.php'))) {
         wp_enqueue_script('spbc-upload-js', SPBC_PATH . '/js/spbc-upload.min.js', array('jquery'), SPBC_VERSION, false);
@@ -510,19 +515,19 @@ function spbc_enqueue_scripts($hook)
             'warning_default'    => __('Do you want to proceed?', 'security-malware-firewall'),
 
             'warning_h_approve'    => __('Do you want to approve this file?', 'security-malware-firewall'),
-            'warning_t_approve'    => __('If you agree, the file {filePath} will be approved', 'security-malware-firewall'),
+            'warning_t_approve'    => __('If you agree, this file will be approved.', 'security-malware-firewall'),
 
             'warning_h_send'       => __('Do you want to proceed?', 'security-malware-firewall'),
-            'warning_t_send'    => __('The file {filePath} will be sent in the Cloud to analyze for a malware, usually processing takes up to 1 minute. The result will be shown in the Analysis log.', 'security-malware-firewall'),
+            'warning_t_send'    => __('This file will be sent to the Cloud to analyze for a malware, usually processing takes up to 1 minute. The result will be shown in the Analysis log.', 'security-malware-firewall'),
 
             'warning_h_delete'      => __('This can\'t be undone and could damage your website. Are you sure?', 'security-malware-firewall'),
-            'warning_t_delete'    => __('If you agree, the file {filePath} will be deleted', 'security-malware-firewall'),
+            'warning_t_delete'    => __('If you agree, this file will be deleted.', 'security-malware-firewall'),
 
             'warning_h_replace'    => __('This can\'t be undone. Are you sure?', 'security-malware-firewall'),
-            'warning_t_replace'    => __('If you agree, the file {filePath} will be replaced', 'security-malware-firewall'),
+            'warning_t_replace'    => __('If you agree, this file will be replaced.', 'security-malware-firewall'),
 
             'warning_h_quarantine' => __('This can\'t be undone and could damage your website. Are you sure?', 'security-malware-firewall'),
-            'warning_t_quarantine'    => __('If you agree, the file {filePath} will be quarantined', 'security-malware-firewall'),
+            'warning_t_quarantine'    => __('If you agree, this file will be quarantined.', 'security-malware-firewall'),
         ));
 
         // Getting scanner settings

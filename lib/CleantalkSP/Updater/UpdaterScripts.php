@@ -1357,4 +1357,18 @@ class UpdaterScripts
         DB::getInstance()->execute('DROP TABLE IF EXISTS ' . $wpdb->prefix . 'spbc_important_files');
         DB::getInstance()->execute('DROP TABLE IF EXISTS ' . $wpdb->prefix . 'spbc_important_file_snapshots');
     }
+
+    public static function migrateDbData_2_141_0() //phpcs:ignore PSR1.Methods.CamelCapsMethodName.NotCamelCaps
+    {
+        $sql_delete_event_oversized =
+            'DELETE FROM ' . SPBC_TBL_SECURITY_LOG . ' WHERE LENGTH(event)>16;';
+        DB::getInstance()->execute($sql_delete_event_oversized);
+    }
+
+    public static function updateTo_2_141_0() //phpcs:ignore PSR1.Methods.CamelCapsMethodName.NotCamelCaps
+    {
+        $sql_change_event_length =
+            'ALTER TABLE ' . SPBC_TBL_SECURITY_LOG . ' MODIFY event VARCHAR(16) NOT NULL;';
+        DB::getInstance()->execute($sql_change_event_length);
+    }
 }

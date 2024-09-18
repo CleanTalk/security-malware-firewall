@@ -518,7 +518,7 @@ function spbc_scanner_file_delete($direct_call = false, $file_id = null)
     }
 
     if ( $spbc->data['license_trial'] == 1 ) {
-        wp_send_json(['error' => spbc_get_trial_restriction_notice()]);
+        wp_send_json(['error' => spbc_get_trial_restriction_notice(), 'hide_support_link' => '1']);
     }
 
     $time_start = microtime(true);
@@ -655,9 +655,13 @@ function spbc_scanner_file_approve($direct_call = false, $file_id = null)
         spbc_check_ajax_referer('spbc_secret_nonce', 'security');
     }
 
-    $time_start = microtime(true);
-
     global $spbc, $wpdb;
+
+    if ( $spbc->data['license_trial'] == 1 ) {
+        wp_send_json(['error' => spbc_get_trial_restriction_notice(), 'hide_support_link' => '1']);
+    }
+
+    $time_start = microtime(true);
 
     $root_path = spbc_get_root_path();
     $file_id   = $direct_call
@@ -1759,7 +1763,7 @@ function spbc_scanner_file_quarantine($direct_call = false, $file_id = null)
     }
 
     if ( $spbc->data['license_trial'] == 1 ) {
-        wp_send_json(['error' => spbc_get_trial_restriction_notice()]);
+        wp_send_json(['error' => spbc_get_trial_restriction_notice(), 'hide_support_link' => '1']);
     }
 
     $root_path = spbc_get_root_path();
@@ -2317,7 +2321,7 @@ function spbc_get_trial_restriction_notice()
     global $spbc;
 
     $html = '<h2>' . esc_html__('Just one step before remove malware', 'security-malware-firewall') . '</h2>';
-    $html .= esc_html__('Please upgrade your account to premium Security license to Cure, Remove and Quarantine viruses and malware. As well as using 1600+ viruses signatures by now.', 'security-malware-firewall');
+    $html .= esc_html__('Please upgrade your account to premium Security license to Cure, Approve, Remove and Quarantine viruses and malware. As well as using 1600+ viruses signatures by now.', 'security-malware-firewall');
     $html .= linkConstructor::buildRenewalLinkATag(
         $spbc->user_token,
         '<button class="button button-primary">' . esc_html__('UPGRADE', 'security-malware-firewall') . '<i class="spbc-icon-link-ext"></i></button>',
@@ -2325,4 +2329,32 @@ function spbc_get_trial_restriction_notice()
         'trial_restriction_notice_upgrade_button'
     );
     return $html;
+}
+
+/**
+ * Get JSON string of accordion row actions that do not need to be confirmed.
+ * @return string
+ */
+function spbc_get_no_confirm_row_actions()
+{
+    global $spbc;
+    // by defaults
+    $actions = array (
+        'defaults' => array(
+            'copy_file_info',
+            'check_analysis_status',
+        ),
+        'restricted' => array(),
+    );
+    // if license is trial
+    if ($spbc->data['license_trial']) {
+        $actions['restricted'][] = 'delete';
+        $actions['restricted'][] = 'quarantine';
+        $actions['restricted'][] = 'approve';
+    }
+
+    $actions['any'] = array_merge($actions['restricted'], $actions['defaults']);
+
+    $actions = json_encode($actions);
+    return is_string($actions) ? $actions : '{[]}';
 }

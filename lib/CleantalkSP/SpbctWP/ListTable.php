@@ -478,7 +478,8 @@ class ListTable
                     }
                     $mob_class_block = 'mob_block_' . $blocks_count;
                     $column_heading = $column['heading'];
-                    $out .= "<td class='$classes $hide_mob_class_name $mob_class_block $hide_show_mob_class_name' data-before='$column_heading'>";
+                    $no_code_header = isset($column['no_code_header']) ? $column['no_code_header'] : '';
+                    $out .= "<td class='$classes $hide_mob_class_name $mob_class_block $hide_show_mob_class_name' data-before='$column_heading' data-defore-no-code='$no_code_header'>";
                     $out .= isset($item[$column_key]) ? $gray_start . $item[$column_key] . $gray_end : '-';
                     $out .= isset($column['primary'])
                         ? '<button type="button" onclick="spbcShowHideRows(' . $blocks_count . ',' . $class_key . ')" class="toggle-row"><span class="screen-reader-text">' . __(

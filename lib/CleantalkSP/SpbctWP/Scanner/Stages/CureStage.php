@@ -120,8 +120,10 @@ class CureStage
     public function processCure($file)
     {
         global $spbc;
-
-        $weak_spots_decoded = json_decode($file['weak_spots'], true);
+        $weak_spots_decoded = '';
+        if ($file['weak_spots']) {
+            $weak_spots_decoded = json_decode($file['weak_spots'], true);
+        }
 
         //init cure log item, this item is DTO, used during all the process
         $cure_log_record = new CureLogRecord(array(
