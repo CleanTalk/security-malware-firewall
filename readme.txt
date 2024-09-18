@@ -4,7 +4,7 @@ Tags: security, firewall, malware, wordpress security, brute force
 Requires at least: 3.0
 Tested up to: 6.6
 Requires PHP: 5.6
-Stable tag: 2.141
+Stable tag: 2.142
 License: GPLv2
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -336,6 +336,26 @@ This is required for the Security FireWall to function properly. Plugins that ar
 31. **File System Watcher tab**. File System Watcher interface.
 
 == Changelog ==
+
+= 2.142 Sep 16 2024
+* Upd. Settings. Modal window common style updated.
+* Mod. Settings. Scanner tab. Quarantine action text updated.
+* Mod. Scanner. Accordion actions. Approve action is require active license now. No confirmation requested for restricted actions.
+* Fix. Scanner. Accordion actions. Bulk action confirm fixed.
+* Upd. Code. Security logs DTO classes implemented.
+* Fix. CSS. Adaptive content. Nav wrapper flex direction.
+* Fix. CSS. Adaptive content. Long description places.
+* Fix. CSS. Adaptive content. Get more details clicks.
+* Fix. CSS. Adaptive content. Scanner legend.
+* Fix. CSS. Adaptive content. Path full description.
+* Upd. SQL schema. The column "view" of spbc_auth_log table set to varchar(16).
+* Fix. CSS. Adaptive content. Malware removal top settings banner adapted.
+* Upd. Modal window. Support link removed from restricted actions notice.
+* Upd. Auth. Open 2fa support link in new page.
+* Fix. Code. Get admin email call moved.
+* Fix. Security log. Parse URL. Fix for wptexturize.
+* Fix. Settings. Unknown accordion description fixed.
+* Fix. FSwatcher. Skip init on WP_Estimation_Form
 
 = 2.141 Sep 02 2024
 * Upd. Security admin. Adaptive version

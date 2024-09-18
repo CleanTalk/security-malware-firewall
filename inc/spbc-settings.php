@@ -1965,30 +1965,6 @@ function spbc_field_key()
 }
 
 /**
- * Current site admin e-mail
- * @return string Admin e-mail
- */
-function spbc_get_admin_email()
-{
-    global $spbc;
-
-    if ( ! is_multisite() ) {
-        $admin_email = get_option('admin_email');
-    } else {
-        $admin_email = get_blog_option(get_current_blog_id(), 'admin_email');
-    }
-
-    if ( $spbc->data['account_email'] ) {
-        add_filter('spbc_get_api_key_email', function () {
-            global $spbc;
-            return $spbc->data['account_email'];
-        });
-    }
-
-    return $admin_email;
-}
-
-/**
  * Show button for changed account email
  */
 function spbc_settings__btn_change_account_email_html()
@@ -2170,11 +2146,11 @@ function spbc_field_security_logs__prepare_data(&$table)
                     $event = __('Viewing admin page ', 'security-malware-firewall');
                     $event .= $is_add_time ? $time : '';
                     break;
-                case 'viewing_posts_list':
+                case 'view_posts_list':
                     $event = __('Viewing the posts list', 'security-malware-firewall');
                     $event .= $is_add_time ? $time : '';
                     break;
-                case 'viewing_pages_list':
+                case 'view_pages_list':
                     $event = __('Viewing the pages list', 'security-malware-firewall');
                     $event .= $is_add_time ? $time : '';
                     break;
@@ -2189,14 +2165,14 @@ function spbc_field_security_logs__prepare_data(&$table)
                     );
                     $event .= $is_add_time ? $time : '';
                     break;
-                case 'activate_plugin_name':
+                case 'activate_plugin':
                     $event = sprintf(
                         __('Activate plugin %s', 'security-malware-firewall'),
                         '"' . $parse_action['plugin_name'] . '"'
                     );
                     $event .= $is_add_time ? $time : '';
                     break;
-                case 'deactivate_plugin_name':
+                case 'deact_plugin':
                     $event = sprintf(
                         __('Deactivate plugin %s', 'security-malware-firewall'),
                         '"' . $parse_action['plugin_name'] . '"'
@@ -2508,17 +2484,18 @@ function spbc_settings__create_notice_on_tab($flag_text_banner)
     }
 
     if ($text != false) {
-        echo '
+        $template = '
             <div class="spbc_tab_fields_group">
                 <div class="spbc_group_header"></div>
-                <div class="notice notice-warning spbct_notice spbct_notice-' . $flag_text_banner . '">
-                    <p>' . $text . '</p>
+                <div class="notice notice-warning spbct_notice spbct_notice-%s">
+                    <p class="spbc---top"">%s</p>
                     <button type="button" class="notice-dismiss spbct_notice-dismiss">
                         <span class="screen-reader-text">Dismiss this notice.</span>
                     </button>
                 </div>
             </div>
         ';
+        printf($template, $flag_text_banner, $text);
     } else {
         return;
     }
@@ -3659,9 +3636,10 @@ function spbc_list_table__get_args_by_type($table_type)
                 'columns'           => array(
                     'link_id'     => array(
                         'heading' => __('Number', 'security-malware-firewall'),
-                        'class'   => ' tbl-width--50px'
+                        'class'   => ' tbl-width--50px',
+                        'primary' => true
                     ),
-                    'link'        => array('heading' => __('Link', 'security-malware-firewall'), 'primary' => true,),
+                    'link'        => array('heading' => __('Link', 'security-malware-firewall')),
                     'page_url'    => array('heading' => __('Post Page', 'security-malware-firewall'),),
                     'link_text'   => array('heading' => __('Link Text', 'security-malware-firewall'),),
                 ),
@@ -3693,9 +3671,10 @@ function spbc_list_table__get_args_by_type($table_type)
                 'columns'           => array(
                     'num'         => array(
                         'heading' => __('Number', 'security-malware-firewall'),
-                        'class'   => ' tbl-width--50px'
+                        'class'   => ' tbl-width--50px',
+                        'primary' => true
                     ),
-                    'domain'      => array('heading' => __('Domain', 'security-malware-firewall'), 'primary' => true,),
+                    'domain'      => array('heading' => __('Domain', 'security-malware-firewall')),
                     'spam_active' => array(
                         'heading' => __('Spam-active', 'security-malware-firewall'),
                         'hint'    => __('Does link spotted in spam?', 'security-malware-firewall'),
@@ -3833,7 +3812,7 @@ function spbc_list_table__get_args_by_type($table_type)
                             'tip'  => 'Send file to the CleanTalk Cloud for analysis'
                         ),
                         'approve'    => array('name' => 'Approve', 'tip' => 'Approved file will not be scanned again'),
-                        'quarantine' => array('name' => 'Quarantine it', 'tip' => 'Place file to quarantine'),
+                        'quarantine' => array('name' => 'Quarantine', 'tip' => 'Place file to quarantine'),
                         'replace'    => array(
                             'name' => 'Replace with Original',
                             'tip'  => 'Restore the initial state of file'
@@ -3857,7 +3836,7 @@ function spbc_list_table__get_args_by_type($table_type)
                         'approve'    => array('name' => 'Approve',),
                         'delete'     => array('name' => 'Delete',),
                         'replace'    => array('name' => 'Replace with original',),
-                        'quarantine' => array('name' => 'Quarantine it',),
+                        'quarantine' => array('name' => 'Quarantine',),
                     ),
                     'sql'               => array(
                         'where' => spbc_get_sql_where_addiction_for_table_of_category('critical'),
@@ -3891,7 +3870,7 @@ function spbc_list_table__get_args_by_type($table_type)
                             'tip'  => 'Send file to the CleanTalk Cloud for analysis'
                         ),
                         'approve'    => array('name' => 'Approve', 'tip' => 'Approved file will not be scanned again'),
-                        'quarantine' => array('name' => 'Quarantine it', 'tip' => 'Place file to quarantine'),
+                        'quarantine' => array('name' => 'Quarantine', 'tip' => 'Place file to quarantine'),
                         'replace'    => array(
                             'name' => 'Replace with Original',
                             'tip'  => 'Restore the initial state of file'
@@ -3915,7 +3894,7 @@ function spbc_list_table__get_args_by_type($table_type)
                         'approve'    => array('name' => 'Approve',),
                         'delete'     => array('name' => 'Delete',),
                         'replace'    => array('name' => 'Replace with original',),
-                        'quarantine' => array('name' => 'Quarantine it',),
+                        'quarantine' => array('name' => 'Quarantine',),
                     ),
                     'sql'               => array(
                         'where' => spbc_get_sql_where_addiction_for_table_of_category('suspicious'),
@@ -4125,9 +4104,10 @@ function spbc_list_table__get_args_by_type($table_type)
                 'columns'           => array(
                     'num'         => array(
                         'heading' => __('Number', 'security-malware-firewall'),
-                        'class'   => ' tbl-width--50px'
+                        'class'   => ' tbl-width--50px',
+                        'primary' => true
                     ),
-                    'domain'      => array('heading' => __('Domain', 'security-malware-firewall'), 'primary' => true,),
+                    'domain'      => array('heading' => __('Domain', 'security-malware-firewall')),
                     'link_count'  => array(
                         'heading' => __('Links of domain', 'security-malware-firewall'),
                         'hint'    => __('Number of found links to the domain on site.', 'security-malware-firewall'),
@@ -4167,11 +4147,11 @@ function spbc_list_table__get_args_by_type($table_type)
                 'if_empty_items'    => __('No malware found', 'security-malware-firewall'),
                 'columns'           => array(
                     'cb'            => array('heading' => '<input type=checkbox>', 'class' => 'check-column',  'width_percent' => 2),
-                    'url'            => array('heading' => 'Page', 'primary' => true,   'width_percent' => 38),
-                    'dbd_found'      => array('heading' => '<i setting="dbd_found" class="spbc_long_description__show spbc-icon-help-circled"></i>Drive by Download', 'width_percent' => 15),
-                    'redirect_found' => array('heading' => '<i setting="redirect_found" class="spbc_long_description__show spbc-icon-help-circled"></i>Redirects', 'width_percent' => 15),
-                    'csrf'           => array('heading' => '<i setting="csrf" class="spbc_long_description__show spbc-icon-help-circled"></i>CSRF', 'width_percent' => 15),
-                    'signature'      => array('heading' => '<i setting="signature" class="spbc_long_description__show spbc-icon-help-circled"></i>Signatures', 'width_percent' => 15),
+                    'url'            => array('heading' => 'Page', 'primary' => true,   'width_percent' => 38, 'no_code_header' => 'Page'),
+                    'dbd_found'      => array('heading' => '<i setting="dbd_found" class="spbc_long_description__show spbc-icon-help-circled"></i>Drive by Download', 'width_percent' => 15, 'no_code_header' => 'Drive by Download'),
+                    'redirect_found' => array('heading' => '<i setting="redirect_found" class="spbc_long_description__show spbc-icon-help-circled"></i>Redirects', 'width_percent' => 15, 'no_code_header' => 'Redirects'),
+                    'csrf'           => array('heading' => '<i setting="csrf" class="spbc_long_description__show spbc-icon-help-circled"></i>CSRF', 'width_percent' => 15, 'no_code_header' => 'CSRF'),
+                    'signature'      => array('heading' => '<i setting="signature" class="spbc_long_description__show spbc-icon-help-circled"></i>Signatures', 'width_percent' => 15, 'no_code_header' => 'Signatures'),
                 ),
                 'order_by'          => array('url' => 'asc'),
                 'sortable'          => array('url', 'dbd_found', 'redirect_found', 'signature', 'csrf'),
@@ -5212,7 +5192,7 @@ function spbc_settings__get_description()
         'hash_denied_hash' => array(
             'title' => 'denied_hash',
             'desc'  => __('The file hash is in denied list. It means that the Security analysts have marked this file
-             as critically dangerous early. We do recommend you to order the Security Audit service.', 'security-malware-firewall')
+             as critically dangerous early.', 'security-malware-firewall')
         ),
         'secfw__get_ip' => array(
             'title' => IP::getOptionLongDescriptionArray()['title'],
@@ -5396,6 +5376,13 @@ function spbc_bulk_actions_description()
 {
     global $spbc;
 
+    $guide_link = LinkConstructor::buildSimpleLink('https://research.cleantalk.org', 'major-signs-of-malware-on-an-infected-wordpress-site');
+    $guide_text = sprintf(
+        esc_html__('Check %s this guide %s out, it helps to identify a malware.', 'security-malware-firewall'),
+        '<a href="' . esc_url($guide_link) . '" target=_blank>',
+        '</a>'
+    );
+
     $actions = array(
         'delete'     => array(
             'title' => esc_html__('Delete', 'security-malware-firewall'),
@@ -5465,6 +5452,7 @@ function spbc_bulk_actions_description()
     $description .= '</div>';
     $description .= '</div>';
 
+    $description .= $guide_text;
     $description .= '<br><br>';
     $description .= '*<br>';
     $description .= esc_html__('Website total files - only executable files (*.php, *.html, *.htm, *.phtml, *.shtml, *.phar, *.odf) except for the quarantined files, files of zero size and files larger than the acceptable size (2 MB).', 'security-malware-firewall');
@@ -5823,12 +5811,13 @@ function spbc__get_accordion_tab_info_block_html($for)
             </div>
             ';
             $main_text = __('If you are not sure about these files, you have two options,', 'security-malware-firewall');
-            $option1 = __('Send it to the cloud where files will be passed through additional tests (Send for Analysis).', 'security-malware-firewall');
-            $option2 = sprintf(
-                __('Request the %sSecurity Audit%s of your website by our Research team. A researcher checks the site among most common security threats, as well as all Unknown files and gives you detailed report. As a promotion, you have annual Security license for one website for free.', 'security-malware-firewall'),
-                "<a href='{$landing_page_link}' target='_blank'>",
-                "</a>"
+            $guide_link = LinkConstructor::buildSimpleLink('https://research.cleantalk.org', 'major-signs-of-malware-on-an-infected-wordpress-site');
+            $option1 = sprintf(
+                esc_html__('Check %s this guide %s out, it helps to identify a malware.', 'security-malware-firewall'),
+                '<a href="' . esc_url($guide_link) . '" target=_blank>',
+                '</a>'
             );
+            $option2 = __('Send it to the cloud where files will be passed through additional tests (Send for Analysis).', 'security-malware-firewall');
             $template = str_replace('%MAIN_TEXT%', $main_text, $template);
             $template = str_replace('%OPTION_1%', $option1, $template);
             $template = str_replace('%OPTION_2%', $option2, $template);
